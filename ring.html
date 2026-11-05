@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Custom Bridal — ring editor — BridalQuotes POC</title>
+<link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+<div class="page wide">
+  <form id="f" onsubmit="return false">
+    <input type="hidden" name="loadingStep" value="">
+    <div class="editor-top">
+      <div>
+        <div class="toolbar"><h1>Custom Bridal</h1><span id="divLoadState" class="loading"></span></div>
+        <div id="divImg">
+          <div id="divBlockImg1" class="style-block">
+            <div class="inline">
+              <label><b>Enter style#</b> <input type="text" id="style1" name="styleSearch" style="width:220px" placeholder="e.g. B552-02"></label>
+              <span id="divSKU" class="hidden"><select name="PID" style="min-width:260px"></select> <button type="button" id="btnValidSKU" class="primary small">OK</button></span>
+              <a class="action hidden" id="lnkChangeSKU">change</a>
+            </div>
+            <div id="divStyleDetails" class="hidden">
+              <div class="metal-block" id="metalBlock" title="Click to edit Ring Details"></div>
+              <div class="inline" style="margin-left:14px">
+                <label>Size <select name="ringSize"></select></label>
+                <label>Finishing <select name="finishingID"></select></label>
+              </div>
+              <div class="prod-imgs" id="divProdImgs"></div>
+            </div>
+          </div>
+          <div id="divBlockImg_plus"></div>
+        </div>
+      </div>
+      <div class="panel right">
+        <a id="lnkViewAs" href="#" target="_blank">View As</a><br>
+        <b id="accName"></b><br>
+        Quote#: <span id="spQuoteID">0</span> &nbsp; Ref#: <span id="spCBRID">0</span><br>
+        <input type="text" name="ringName" maxlength="50" style="width:100%;margin-top:6px" placeholder="Enter a name for this custom Ring (Optional)">
+      </div>
+    </div>
+    <div id="divGblContent"></div>
+  </form>
+</div>
+<script src="assets/js/data/lookups.js"></script>
+<script src="assets/js/data/products.js"></script>
+<script src="assets/js/data/accounts.js"></script>
+<script src="assets/js/data/rates.js"></script>
+<script src="assets/js/pricing.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/ring.js"></script>
+</body>
+</html>

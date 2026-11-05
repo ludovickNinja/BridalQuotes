@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rates &amp; settings — BridalQuotes POC</title>
+<link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+<div class="page">
+  <div class="toolbar"><h1>Rates &amp; settings</h1><a href="index.html?viewCBR=1">» back to quote list</a></div>
+  <p class="muted">In the live system these values come from the server on every page load (live metal rate, exchange rate, duties and default markups — "configured somewhere", see the system map). Here they are editable so the POC can show how an unlocked quote drifts with the metal price.</p>
+  <form id="f" class="panel" onsubmit="return false">
+    <h2>Metal rates (per gram)</h2>
+    <table class="form">
+      <tr><td class="lbl">Rates as of</td><td><input type="date" name="asOf"></td></tr>
+      <tr><td class="lbl">Pure gold (24K) $/g</td><td><input type="number" step="any" name="goldPerGramPure" class="num w"> <span class="small muted" id="karatPreview"></span></td></tr>
+      <tr><td class="lbl">Platinum 950 $/g</td><td><input type="number" step="any" name="platinumPerGram" class="num w"></td></tr>
+      <tr><td class="lbl">Palladium 950 $/g</td><td><input type="number" step="any" name="palladiumPerGram" class="num w"></td></tr>
+      <tr><td class="lbl">Silver 925 $/g</td><td><input type="number" step="any" name="silverPerGram" class="num w"></td></tr>
+      <tr><td class="lbl">Other metals $/g</td><td><input type="number" step="any" name="otherPerGram" class="num w"></td></tr>
+    </table>
+    <h2>Currency, tariff, discount, validity</h2>
+    <table class="form">
+      <tr><td class="lbl">Exchange rate USD → CAD</td><td><input type="number" step="any" name="exchangeRate" class="num"></td></tr>
+      <tr><td class="lbl">T USD (tariff) %</td><td><input type="number" step="any" name="tarif" class="num"></td></tr>
+      <tr><td class="lbl">Discount % (quote default)</td><td><input type="number" step="any" name="discount" class="num"></td></tr>
+      <tr><td class="lbl">Retail rate label</td><td><input type="number" step="any" name="retailRate" class="num"> applied multiplier <input type="number" step="any" name="retailRateApplied" class="num"> <span class="small muted">(live: label 2, applied 1 — bug #3)</span></td></tr>
+      <tr><td class="lbl">Quote validity (days)</td><td><input type="number" name="expiryDays" class="short"> extension <input type="number" name="extensionDays" class="short"></td></tr>
+    </table>
+    <h2>Duties % and default markups per cost line</h2>
+    <table class="grid" style="width:auto"><thead><tr><th>Line</th><th>Duties %</th><th>Markup</th></tr></thead><tbody id="tbLines"></tbody></table>
+    <div class="btn-row"><button type="button" class="primary" id="btnSave">Save</button><button type="button" id="btnDefaults">Reset to captured defaults (2026-11-04)</button></div>
+  </form>
+  <div class="panel">
+    <h2>Demo data</h2>
+    <p class="small muted">Everything lives in this browser's localStorage. Export to keep a copy, import to restore it elsewhere, reset to go back to the seeded walkthrough quotes (101575, 101587).</p>
+    <div class="btn-row"><button type="button" id="btnExport">Export JSON</button><button type="button" id="btnImport">Import JSON</button><input type="file" id="fileImport" accept="application/json" style="display:none"><button type="button" class="danger" id="btnReset">Reset demo data</button></div>
+  </div>
+</div>
+<script src="assets/js/data/lookups.js"></script>
+<script src="assets/js/data/products.js"></script>
+<script src="assets/js/data/accounts.js"></script>
+<script src="assets/js/data/rates.js"></script>
+<script src="assets/js/pricing.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/ui.js"></script>
+<script>
+(function () {
+  const { $, $$, esc } = UI;
+  UI.adminBar('Rates & settings');
+  const f = $('#f');
+  const lines = [['center', 'Center Diamond'], ['setting', 'Setting Center Stone'], ['addl', 'Additional Diamond'], ['ads', 'Additional Diamond Setting'], ['gold', 'Gold Charge'], ['labor', 'Labor Charge'], ['side', 'Side Diamonds'], ['cad', 'Cad Print Fee']];
+  $('#tbLines').innerHTML = lines.map(([k, l]) => `<tr><td>${l}</td><td><input type="number" step="any" class="short" name="duties.${k}"></td><td><input type="number" step="any" class="short" name="markups.${k}"></td></tr>`).join('');
+  function fill(r) {
+    ['asOf', 'goldPerGramPure', 'platinumPerGram', 'palladiumPerGram', 'silverPerGram', 'otherPerGram', 'exchangeRate', 'tarif', 'discount', 'retailRate', 'retailRateApplied', 'expiryDays', 'extensionDays'].forEach(k => { f.elements[k].value = r[k]; });
+    lines.forEach(([k]) => { f.elements['duties.' + k].value = r.duties[k]; f.elements['markups.' + k].value = r.markups[k]; });
+    preview();
+  }
+  function read() {
+    const r = DB.clone(DB.rates());
+    ['goldPerGramPure', 'platinumPerGram', 'palladiumPerGram', 'silverPerGram', 'otherPerGram', 'exchangeRate', 'tarif', 'discount', 'retailRate', 'retailRateApplied', 'expiryDays', 'extensionDays'].forEach(k => { r[k] = Number(f.elements[k].value); });
+    r.asOf = f.elements.asOf.value;
+    lines.forEach(([k]) => { r.duties[k] = Number(f.elements['duties.' + k].value); r.markups[k] = Number(f.elements['markups.' + k].value); });
+    return r;
+  }
+  function preview() { const g = Number(f.elements.goldPerGramPure.value) || 0; $('#karatPreview').textContent = '→ ' + LK.karats.filter(k => k.group === 'gold' && k.id <= 6).map(k => `${k.name} $${(g * k.purity).toFixed(2)}`).join(' · '); }
+  f.elements.goldPerGramPure.addEventListener('input', preview);
+  fill(DB.rates());
+  $('#btnSave').onclick = () => { DB.saveRates(read()); UI.updBan('saved'); };
+  $('#btnDefaults').onclick = () => fill(window.DEFAULT_RATES);
+  $('#btnExport').onclick = () => { const a = UI.el('a', { href: 'data:application/json;charset=utf-8,' + encodeURIComponent(DB.export()), download: 'bridalquotes_db.json' }); document.body.appendChild(a); a.click(); a.remove(); };
+  $('#btnImport').onclick = () => $('#fileImport').click();
+  $('#fileImport').onchange = e => { const fr = new FileReader(); fr.onload = () => { try { DB.import(fr.result); alert('Imported.'); location.reload(); } catch (err) { alert('Invalid file: ' + err.message); } }; fr.readAsText(e.target.files[0]); };
+  $('#btnReset').onclick = () => { if (confirm('Reset all quotes and rates to the seeded demo data?')) { DB.reset(); location.reload(); } };
+})();
+</script>
+</body>
+</html>

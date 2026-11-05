@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Regular quote — BridalQuotes POC</title>
+<link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+<div class="page">
+  <div class="toolbar"><h1>Quote (regular)</h1><a href="index.html?viewCBR=0">» back to quote list</a></div>
+  <div class="panel">
+    <p><b>Not captured yet.</b> The Regular Quotes flow (<code>quoteEdit.asp</code>, machine-made CrownRing wedding and anniversary bands) was not walked through; its fields, pricing and send flow are the first item in "Still to capture" in <code>docs/Quote-System-Map.md</code>.</p>
+    <p>The agreed direction (improvement #1) is to fold this flow into Custom Bridal as a product kind ("machine-made band") that switches which sections and defaults apply, rather than rebuilding it as a separate screen.</p>
+    <p>Quote # <b id="qid"></b></p>
+  </div>
+</div>
+<script>document.getElementById('qid').textContent = new URLSearchParams(location.search).get('quoteID') || 'new';</script>
+</body>
+</html>

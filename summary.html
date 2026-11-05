@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Custom Bridal Quote — summary</title>
+<link rel="stylesheet" href="assets/css/app.css">
+<style>body{background:#f4f1ec}</style>
+</head>
+<body>
+<div class="page">
+  <div class="notice">Customer-facing summary (stand-in for /quote_custom_summary.asp?CBRUID=…). The live page was not captured in detail; this is what the store sees after SEND, assembled from the ring record. In the real system the store approves the quote on the B2B site, not here.</div>
+  <div class="summary" id="divSummary"></div>
+</div>
+<script src="assets/js/data/lookups.js"></script>
+<script src="assets/js/data/products.js"></script>
+<script src="assets/js/data/accounts.js"></script>
+<script src="assets/js/data/rates.js"></script>
+<script src="assets/js/pricing.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/ui.js"></script>
+<script>
+(function () {
+  const { $, esc, money, qs } = UI;
+  const ring = DB.ringByUID(qs('CBRUID') || '');
+  const box = $('#divSummary');
+  if (!ring) { box.innerHTML = '<p class="danger">Quote reference not found.</p>'; return; }
+  const quote = DB.quote(ring.quoteID); const acc = ACCOUNTS.byID(quote.uaID); const p = PRODUCTS.byPID(ring.PID);
+  const cur = acc ? acc.currency : 'USD';
+  const shown = ring.renderings.filter(r => r.isChecked);
+  const title = ring.renderings.find(r => r.isTitleImg);
+  const sideDesc = ring.side.map(g => `${g.qty} × ${LK.name(LK.diamondSizes, g.sizeID)} mm ${LK.name(LK.qualities, g.psID)} ${LK.name(LK.shapes, g.shapeID)}${(g.settings[0] && g.settings[0].settingLocationID) ? ' (' + LK.name(LK.settingLocations, g.settings[0].settingLocationID) + ')' : ''}`).join(', ');
+  const center = Number(ring.cdi.stoneProvider) === 0 ? '' : `${Number(ring.cdi.stoneProvider) === 1 ? "Customer's" : 'CrownRing'} ${LK.name(LK.shapes, ring.cdi.shapeID)} ${ring.cdi.DW ? ring.cdi.DW + ' ct' : ''} ${ring.cdi.L ? `(${ring.cdi.L} × ${ring.cdi.W} × ${ring.cdi.D} mm)` : ''}${ring.cdi.isPending ? ' — details pending' : ''}`;
+  box.innerHTML = `
+    <div class="brandline">NOAM CARVER</div><div class="sub">CrownRing Bridal House · Custom Bridal Quote # ${quote.quoteID} · Ref# ${ring.CBRID}</div>
+    <div class="hero">
+      <img src="${title ? title.src : (p ? PRODUCTS.img(p, 'persp') : '')}" alt="">
+      <div>
+        <h2 style="margin-top:0">${esc(ring.ringName || (p ? p.sku + '-C' : ''))}</h2>
+        ${ring.ringName && p ? `<div class="muted">${esc(p.sku)}-C</div>` : ''}
+        <table class="form">
+          <tr><td class="lbl">Metal</td><td>${esc(LK.name(LK.karats, ring.karatID))} ${esc(LK.name(LK.colours, ring.colourID))}</td></tr>
+          <tr><td class="lbl">Size</td><td>${ring.ringSize === -1 ? 'Pending' : ring.ringSize === 0 ? 'N/A' : esc(ring.ringSize)}</td></tr>
+          ${ring.finishingID ? `<tr><td class="lbl">Finishing</td><td>${esc(LK.name(LK.finishings, ring.finishingID))}</td></tr>` : ''}
+          ${center ? `<tr><td class="lbl">Center stone</td><td>${esc(center)}</td></tr>` : ''}
+          ${ring.scsi.sendStone4Setting === 1 ? `<tr><td class="lbl">Setting</td><td>Center stone setting included</td></tr>` : ''}
+          ${sideDesc ? `<tr><td class="lbl">Side stones</td><td>${esc(sideDesc)}</td></tr>` : ''}
+          ${ring.custom.length ? `<tr><td class="lbl">Design</td><td>${ring.custom.map(b => `<b>${esc(LK.name(LK.modelTypes, b.modelTypeID))}</b><br>${esc(b.notes).replace(/\n/g, '<br>')}`).join('<br>')}</td></tr>` : ''}
+          ${ring.note ? `<tr><td class="lbl">Notes</td><td>${esc(ring.note).replace(/\n/g, '<br>')}</td></tr>` : ''}
+          <tr><td class="lbl">Quantity</td><td>${ring.qty}</td></tr>
+        </table>
+        <div class="price" style="margin-top:10px">${ring.isFinalPrice0 ? 'Price on request' : money(DB.ringPrice(ring), cur)}</div>
+        <div class="muted">Valid until ${quote.expiry}${DB.isExpired(quote) ? ' — <span class="danger">expired</span>' : ''}${ring.lockPriceUSD > 0 ? '' : ' — price not yet locked'}</div>
+      </div>
+    </div>
+    ${shown.length ? `<h2>Renderings</h2><div class="gallery">${shown.map(r => `<a href="${r.src}" target="_blank"><img src="${r.src}" alt="${esc(r.fileName)}"></a>`).join('')}</div>` : ''}
+    ${[ring.link1, ring.link2].filter(Boolean).length ? `<h2>3D viewer</h2>${[ring.link1, ring.link2].filter(Boolean).map(l => `<a href="${esc(l)}" target="_blank">${esc(l)}</a><br>`).join('')}` : ''}
+    <hr style="margin:20px 0;border:none;border-top:1px solid #ddd">
+    <div class="small muted">Prepared for ${esc(acc ? acc.name : '')} (${esc(quote.ctName)}) on ${quote.dateQuoted} by ${esc(quote.userID)}. Quotes are valid 15 days; after that the price is updated to the metal rate of the day.</div>
+    <div class="btn-row" style="margin-top:14px">
+      ${quote.status === 'pending' ? `<button type="button" class="primary" id="btnApprove">Simulate "Approved by client" (B2B step)</button>` : `<span class="badge ${quote.status === 'converted' ? 'yes' : 'yes'}">${esc(UI.statusLabel(quote))}</span>`}
+      ${quote.status === 'approved' ? `<button type="button" id="btnConvert">Simulate "Convert to order" (CrownRing step)</button>` : ''}
+      <a href="quote.html?quoteID=${quote.quoteID}" class="small">back to the admin quote</a>
+    </div>`;
+  const ap = $('#btnApprove'); if (ap) ap.onclick = () => { quote.status = 'approved'; DB.saveQuote(quote); location.reload(); };
+  const cv = $('#btnConvert'); if (cv) cv.onclick = () => { quote.status = 'converted'; DB.saveQuote(quote); location.reload(); };
+})();
+</script>
+</body>
+</html>
