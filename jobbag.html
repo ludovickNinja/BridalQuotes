@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crownring - Job Bag</title>
+<link rel="stylesheet" href="assets/css/app.css">
+<style>
+  body { background: #fff; }
+  .jb { max-width: 820px; margin: 0 auto; padding: 28px 32px; font-size: 13px; }
+  .jb h1 { font-size: 18px; letter-spacing: .18em; margin-bottom: 4px; }
+  .jb .meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px 16px; border: 1px solid #ccc; padding: 10px 12px; margin: 14px 0; }
+  .jb .meta b { display: block; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #666; }
+  .jb table.grid td, .jb table.grid th { font-size: 12px; }
+  .jb .imgs { display: flex; gap: 12px; margin: 10px 0; }
+  .jb .imgs img { max-height: 200px; border: 1px solid #ccc; }
+  .jb .notes { border: 1px solid #ccc; padding: 8px 10px; min-height: 40px; white-space: pre-wrap; }
+  @media print { .noprint { display: none; } .jb { padding: 0; } }
+</style>
+</head>
+<body>
+<div class="jb" id="jb"></div>
+<script src="assets/js/data/live-lookups.js"></script>
+<script src="assets/js/data/lookups.js"></script>
+<script src="assets/js/data/products.js"></script>
+<script src="assets/js/data/accounts.js"></script>
+<script src="assets/js/data/rates.js"></script>
+<script src="assets/js/pricing.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/ui.js"></script>
+<script>
+(function () {
+  const { $, esc, qs } = UI;
+  const ring = DB.ring(qs('CBRID')); const box = $('#jb');
+  if (!ring) { box.innerHTML = '<p class="danger">Ring not found.</p>'; return; }
+  const quote = DB.quote(ring.quoteID); const acc = ACCOUNTS.byID(quote.uaID); const p = PRODUCTS.byPID(ring.PID);
+  const t = PRICING.totals(ring, DB.rates());
+  const jb = ring.renderings.filter(r => r.isShowInJobbag);
+  const size = ring.ringSize === -1 ? 'PENDING' : ring.ringSize === 0 ? 'N/A' : ring.ringSize;
+  box.innerHTML = `
+    <div class="noprint notice">Job bag preview (stand-in for JobBagpdf/ via html2PDF_txt). The live PDF layout was not captured; this page carries the same production data. <button type="button" class="small" onclick="print()">Print</button></div>
+    <h1>JOB BAG · REF# ${ring.CBRID}</h1>
+    <div class="muted">Custom Bridal Quote # ${quote.quoteID} · ${esc(acc ? acc.name : '')} · ${esc(quote.ctName)} · quoted ${quote.dateQuoted} by ${esc(quote.userID)}</div>
+    <div class="meta">
+      <div><b>SKU</b>${esc(p ? p.sku : '')}-C</div><div><b>Ring name</b>${esc(ring.ringName || '—')}</div><div><b>Metal</b>${esc(LK.name(LK.karats, ring.karatID))} ${esc(LK.name(LK.colours, ring.colourID))}</div><div><b>Size</b>${esc(size)}</div>
+      <div><b>Finishing</b>${esc(LK.name(LK.finishings, ring.finishingID))}</div><div><b>Width / thickness</b>${esc(ring.ringMM)} / ${esc(ring.thickness)} / ${esc(ring.thicknessBottom)}</div><div><b>Gold weight</b>${esc(ring.gold.weight)} g (${esc(LK.name(LK.karats, ring.gold.karatID))}, loss ${esc(ring.gold.loss)}%)</div><div><b>Qty</b>${ring.qty}</div>
+      <div><b>Center stone</b>${ring.cdi.stoneProvider === '' ? 'none' : esc(`${ring.cdi.stoneProvider} ${LK.name(LK.shapes, ring.cdi.shapeID)} ${ring.cdi.DW || ''} ct ${ring.cdi.L ? ring.cdi.L + '×' + ring.cdi.W + '×' + ring.cdi.D : ''}${ring.cdi.isPending ? ' (PENDING)' : ''}`)}</div>
+      <div><b>Setting</b>${ring.scsi.sendStone4Setting === 1 ? esc(LK.name(LK.settingCharges, ring.scsi.settingChargeID)) : ring.scsi.sendStone4Setting === 0 ? 'no' : 'PENDING'}</div>
+      <div><b>Design approval</b>${ring.design.needsApproval ? (ring.design.approved4Prod ? 'approved for production' : 'pending — ' + LK.name(LK.priorities, ring.design.priority)) : 'not required'}</div>
+      <div><b>Completed</b>${ring.status ? 'YES' : 'NO'}${ring.completedSkipped && ring.completedSkipped.length ? ' (skipped: ' + esc(ring.completedSkipped.join('; ')) + ')' : ''}</div>
+    </div>
+    <h2>Customization</h2>
+    ${ring.custom.length ? ring.custom.map(b => `<div class="notes"><b>${esc(LK.name(LK.modelTypes, b.modelTypeID))}</b>${b.style ? ' — ref. ' + esc(b.style) : ''}${b.modifIDs.filter(Boolean).length ? ' — ' + esc(b.modifIDs.filter(Boolean).map(m => LK.name(LK.modifications, m)).join(', ')) : ''}\n${esc(b.notes)}</div>`).join('') : '<div class="notes muted">none</div>'}
+    <h2>Side diamonds</h2>
+    ${ring.side.length ? `<table class="grid"><tr><th>Provider</th><th>Quality</th><th>Shape</th><th>Size</th><th>Qty</th><th>Setting</th><th>Placement</th></tr>${ring.side.map(g => `<tr><td>${esc(g.provider)}</td><td>${esc(LK.name(LK.qualities, g.psID))}</td><td>${esc(LK.name(LK.shapes, g.shapeID))}</td><td>${esc(LK.name(LK.diamondSizes, g.sizeID))}</td><td>${g.qty}</td><td>${g.settings.map(st => esc(LK.name(LK.settingStyles, st.settingStyleID)) + ' × ' + st.qty).join('<br>')}</td><td>${g.settings.map(st => esc(LK.name(LK.settingLocations, st.settingLocationID))).join('<br>')}</td></tr>`).join('')}</table>` : '<div class="notes muted">none</div>'}
+    ${ring.addl.length ? `<h2>Additional diamonds</h2><table class="grid"><tr><th>Provider</th><th>Shape</th><th>Size</th><th>Qty</th><th>Weight</th><th>Setting</th><th>Placement</th></tr>${ring.addl.map(b => `<tr><td>${esc(b.stoneProvider)}</td><td>${esc(LK.name(LK.shapes, b.shapeID))}</td><td>${esc(LK.name(LK.diamondSizes, b.sizeID))}</td><td>${b.qty}</td><td>${b.DW} ct</td><td>${esc(LK.name(LK.settingStyles, b.settingStyleID))}</td><td>${esc(LK.name(LK.settingLocations, b.settingLocationID))}</td></tr>`).join('')}</table>` : ''}
+    <h2>Internal production notes</h2>
+    <div class="notes">${esc((ring.ntrnlNotes || []).filter(Boolean).join('\n')) || '<span class="muted">none</span>'}</div>
+    <h2>Invoice instructions</h2>
+    <div class="notes">${esc(ring.invoiceInstructions) || '<span class="muted">none</span>'}</div>
+    ${jb.length ? `<h2>Images (Show in Job bag)</h2><div class="imgs">${jb.map(r => `<img src="${r.src}" alt="${esc(r.fileName)}">`).join('')}</div>` : ''}
+    ${ring.matchBand.is ? `<h2>Matching band</h2><div class="notes">${esc(ring.matchBand.type)} ${esc(ring.matchBand.val)}</div>` : ''}
+    <h2>Costing</h2>
+    <div class="muted small">Final cost $${t.totalFinalCost.toFixed(2)} · sell $${t.sellUSD} USD · locked ${ring.lockPriceUSD ? '$' + ring.lockPriceUSD : 'no'} · GM ${t.grossMargin}%</div>`;
+})();
+</script>
+</body>
+</html>

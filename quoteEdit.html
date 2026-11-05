@@ -3,18 +3,147 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Regular quote — BridalQuotes POC</title>
+<title>Crownring - Quote</title>
 <link rel="stylesheet" href="assets/css/app.css">
+<style>
+  .tr .thumb { width: 60px; }
+  .lineWrap .details { padding: 0 5px 8px 95px; font-size: 11px; }
+  .lineWrap .tr { display: table; width: 100%; }
+  .lineWrap .tr .desc { width: auto; }
+  .sums { display: grid; grid-template-columns: max-content 120px; gap: 4px 14px; justify-content: end; margin-top: 8px; text-align: right; }
+  .sums .hl { background: #e2e2e2; font-weight: bold; padding: 2px 8px; }
+  .tr .sku a { color: #06C; }
+</style>
 </head>
 <body>
 <div class="page">
-  <div class="toolbar"><h1>Quote (regular)</h1><a href="index.html?viewCBR=0">» back to quote list</a></div>
-  <div class="panel">
-    <p><b>Not captured yet.</b> The Regular Quotes flow (<code>quoteEdit.asp</code>, machine-made CrownRing wedding and anniversary bands) was not walked through; its fields, pricing and send flow are the first item in "Still to capture" in <code>docs/Quote-System-Map.md</code>.</p>
-    <p>The agreed direction (improvement #1) is to fold this flow into Custom Bridal as a product kind ("machine-made band") that switches which sections and defaults apply, rather than rebuilding it as a separate screen.</p>
-    <p>Quote # <b id="qid"></b></p>
-  </div>
+  <a class="backLink" href="index.html?viewCBR=0">&raquo; back to quote list</a>
+  <span class="title" id="title">Quote#</span>
+  <div style="margin:10px 0"><button type="button" id="btnNew">Place New Quote</button> <button type="button" id="btnLogAs">Log as customer</button></div>
+  <table class="billShip">
+    <tr>
+      <td style="width:33%"><b>Billing</b><div id="divBilling" style="margin-top:4px"></div></td>
+      <td style="width:40%"><b>Shipping</b><br><select id="shippingID" style="min-width:320px;margin:4px 0"></select><div id="divShipping"></div></td>
+      <td class="right" id="createdBy"></td>
+    </tr>
+  </table>
+  <div style="margin:20px 0 10px"><button type="button" class="quickAddBtn" id="btnAdd">ADD A QUOTE</button> &nbsp; <a class="action blueLink" id="lnkExact">exact search</a>
+    <span class="hidden" id="divExact"><input type="text" id="skuSearch" class="hmSearchField" placeholder="Type SKU here"> <button type="button" id="btnQuickAdd">Add</button></span></div>
+  <div style="display:flex;align-items:center;gap:10px;padding:5px;background:#F0F0F0"><b>Order details</b> <select id="showImg"><option value="1">Show images</option><option value="2">Hide images</option></select><span style="margin-left:auto">Qty: <span class="ico edit" id="lnkBulkQty" title="Update the quantity of every line (qtyBulkUpd_form)"></span></span></div>
+  <div id="divContentGnrl"><div id="divLines"></div></div>
+  <div style="display:flex;align-items:center;padding:5px"><a class="action blueLink" id="lnkRemoveAll">Remove All</a><span style="margin-left:auto">total pieces: <b id="pieces">0</b> &nbsp; <span id="pdfInfo"></span></span></div>
+  <table id="tblCt" style="width:100%">
+    <tr>
+      <td style="vertical-align:top">
+        <table class="form" style="margin:0 0 0 -10px">
+          <tr><td class="lbl">Name:</td><td><input type="text" id="contactName" maxlength="50" style="width:240px"></td></tr>
+          <tr><td class="lbl"><input type="checkbox" id="sendToEmail"> Email:</td><td><input type="text" id="contactEmail" maxlength="50" style="width:240px"></td></tr>
+          <tr><td class="lbl"><input type="checkbox" id="sendToEmail2"> Other Email:</td><td><input type="text" id="contactEmail2" maxlength="50" style="width:240px"></td></tr>
+          <tr><td class="lbl"><input type="checkbox" id="sendToFax"> Fax:</td><td><input type="text" id="contactFax" maxlength="50" style="width:240px"></td></tr>
+        </table>
+      </td>
+      <td style="vertical-align:top;text-align:right">
+        <div class="sums"><span>Subtotal:</span><span id="subtotal"></span><span class="hl">Total (USD):</span><span class="hl" id="total"></span><span>Total Retail:</span><span id="retail"></span></div>
+        <div style="margin-top:10px"><button type="button" id="btnPreview">Preview</button> <button type="button" id="btnSend">Send/resend</button> <button type="button" id="btnSave">Update Quote</button> <button type="button" id="btnReset">Reset</button></div>
+      </td>
+    </tr>
+  </table>
 </div>
-<script>document.getElementById('qid').textContent = new URLSearchParams(location.search).get('quoteID') || 'new';</script>
+<script src="assets/js/data/live-lookups.js"></script>
+<script src="assets/js/data/lookups.js"></script>
+<script src="assets/js/data/products.js"></script>
+<script src="assets/js/data/accounts.js"></script>
+<script src="assets/js/data/rates.js"></script>
+<script src="assets/js/pricing.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/ui.js"></script>
+<script>
+(function () {
+  const { $, $$, esc, money, el, qs } = UI;
+  UI.adminBar('Quote');
+  const quoteID = Number(qs('quoteID') || 0);
+  let quote = quoteID ? DB.regularQuote(quoteID) : null;
+  if (!quote) { // "Place New Quote": pick the account first (the live page opens blank with the billing search)
+    const box = UI.overlay('Billing', `<table class="form"><tr><td class="lbl req">Company</td><td><input type="text" id="SM_val" style="width:320px" placeholder="Enter Company Name here"></td></tr><tr><td class="lbl">Shipping</td><td><select id="newShip" style="min-width:320px"></select></td></tr></table>`,
+      [{ label: 'Create', primary: true, onclick: () => { if (!box._acc) return alert('Please select a company'); const q = DB.createRegularQuote(box._acc.uaID, Number(box.querySelector('#newShip').value) || 0); location.href = 'quoteEdit.html?quoteID=' + q.quoteID; } }, { label: 'Close', onclick: () => { location.href = 'index.html?viewCBR=0'; } }]);
+    UI.smartSearch(box.querySelector('#SM_val'), q => ACCOUNTS.search(q), a => a.name, a => { box._acc = a; box.querySelector('#SM_val').value = a.name; box.querySelector('#newShip').innerHTML = a.shipping.map(s => `<option value="${s.shippingID}">${esc(a.name)} ${esc(s.address)}</option>`).join(''); });
+    return;
+  }
+  const acc = ACCOUNTS.byID(quote.uaID);
+  const M = DB.REGULAR_RETAIL_MULT;
+  $('#title').textContent = `Quote# ${quote.quoteID}-${quote.userID}`;
+  $('#divBilling').innerHTML = `<span class="small">Contact Name: ${esc(acc ? acc.contact : '')}</span><br><b>${esc(acc ? acc.name : '')}</b><br>${esc(acc ? acc.billing : '')}<br>${esc(acc && acc.emails[0] || '')}<br>${esc(acc ? acc.phone : '')}`;
+  $('#shippingID').innerHTML = (acc ? acc.shipping : []).map(s => `<option value="${s.shippingID}"${s.shippingID === Number(quote.shippingID) ? ' selected' : ''}>${esc(acc.name)} ${esc(s.address)}</option>`).join('');
+  const paintShip = () => { const s = acc && acc.shipping.find(x => x.shippingID === Number($('#shippingID').value)); $('#divShipping').innerHTML = `<span class="small">Contact Name: ${esc(quote.ctName)}</span><br><b>${esc(acc ? acc.name : '')}</b><br>${s ? esc(s.address) : ''}<br>${esc(quote.contactEmail)}<br>${esc(acc ? acc.phone : '')}`; };
+  $('#shippingID').onchange = () => { quote.shippingID = Number($('#shippingID').value); paintShip(); };
+  paintShip();
+  $('#createdBy').innerHTML = `Created by: ${esc(quote.userID)} - ${quote.dateQuoted}`;
+  ['contactName', 'contactEmail', 'contactEmail2', 'contactFax'].forEach(k => { $('#' + k).value = k === 'contactName' ? quote.ctName : quote[k] || ''; $('#' + k).onchange = () => { if (k === 'contactName') quote.ctName = $('#' + k).value; else quote[k] = $('#' + k).value; }; });
+  ['sendToEmail', 'sendToEmail2', 'sendToFax'].forEach(k => { $('#' + k).checked = !!quote[k]; $('#' + k).onchange = () => { quote[k] = $('#' + k).checked ? 1 : 0; }; });
+  $('#pdfInfo').innerHTML = quote.pdfDate ? `PDF - ${quote.pdfDate.replace(/-/g, '/')}` : '';
+  $('#btnNew').onclick = () => window.open('quoteEdit.html?quoteID=0', '_blank');
+  $('#btnLogAs').onclick = () => UI.overlay('Log as customer', '<p>Impersonates the retailer on the B2B site (home_act.asp act=log2B2B → /B2B/). Not part of the POC.</p>');
+  $('#lnkExact').onclick = () => $('#divExact').classList.toggle('hidden');
+  UI.smartSearch($('#skuSearch'), PRODUCTS.searchBands, p => `${p.sku} — ${p.brand} — $${p.b2bPrice.toFixed(2)}`, p => { $('#skuSearch').value = p.sku; $('#skuSearch')._pid = p.PID; });
+  $('#btnQuickAdd').onclick = () => { const p = PRODUCTS.byPID($('#skuSearch')._pid) || PRODUCTS.bySKU($('#skuSearch').value.trim()); if (!p || p.b2bPrice == null) return alert('Unknown SKU'); addLine(p); $('#skuSearch').value = ''; };
+  $('#btnAdd').onclick = () => { // the live button opens /b2bsr/advancedSearch.asp?isQuote=1 in a popup
+    const box = UI.overlay('Add a quote line — B2B catalogue search', `<input type="text" id="q" style="width:100%" placeholder="style or SKU (e.g. WB-046, CR-6MM)"><div id="res" style="margin-top:8px"></div>`, [{ label: 'Close', onclick: UI.closeOverlay }], { width: '720px' });
+    const res = box.querySelector('#res'); const q = box.querySelector('#q');
+    q.oninput = () => { const items = PRODUCTS.searchBands(q.value); res.innerHTML = items.length ? `<table class="grid"><tr><th></th><th>SKU</th><th>Brand</th><th>Width</th><th>Metal</th><th>B2B price</th><th></th></tr>${items.map(p => `<tr><td><img src="${PRODUCTS.placeholder(p, 'side')}" style="width:40px;height:40px"></td><td>${esc(p.sku)}</td><td>${esc(p.brand)}</td><td>${p.ringMM} MM</td><td>${esc(LK.name(LK.karats, p.karatID))} ${esc(LK.name(LK.colours, p.colourID))}</td><td>$${p.b2bPrice.toFixed(2)}</td><td><button type="button" class="small" data-pid="${p.PID}">Add</button></td></tr>`).join('')}</table>` : '<span class="muted">type to search</span>'; res.querySelectorAll('button').forEach(b => b.onclick = () => { addLine(PRODUCTS.byPID(b.dataset.pid)); UI.closeOverlay(); }); };
+    q.focus();
+  };
+  function addLine(p) { quote.lines.push({ lineID: DB.nextCustomID(), PID: p.PID, size: '', qty: 1, unitPrice: p.b2bPrice, customPrice: Math.ceil(p.b2bPrice), discountPct: 0, discountAmt: 0, finishingID: p.defaultFinishingID, thickness: p.thickness, completed: 0, instruction: '' }); render(); }
+  const lineTotal = l => (Number(l.customPrice) || 0) * (Number(l.qty) || 0) * (1 - (Number(l.discountPct) || 0) / 100) - (Number(l.discountAmt) || 0);
+  function render() {
+    const c = $('#divLines'); c.innerHTML = '';
+    quote.lines.forEach((l, i) => {
+      const p = PRODUCTS.byPID(l.PID);
+      const d = el('div', { class: 'lineWrap', style: 'border-bottom:1px solid #eee' });
+      d.innerHTML = `<div class="tr">
+        <div class="rm" title="Remove"><img src="https://www.crownring.com/_admin/images/icon.remove.gif" alt="x" onerror="this.replaceWith('x')"></div>
+        <div>${$('#showImg').value === '1' ? `<img class="thumb" src="${PRODUCTS.img(p, 'side')}" data-fallback="${PRODUCTS.placeholder(p, 'side')}" onerror="if(this.src!==this.dataset.fallback)this.src=this.dataset.fallback">` : ''}</div>
+        <div class="desc"><span class="brand">${esc(p.brand)}</span><br><span class="sku"><a href="#" onclick="return false">${esc(p.sku)}-C</a></span><br><a class="action blueLink dup">Duplicate</a></div>
+        <div>${p.ringMM} MM</div><div>${esc(LK.name(LK.karats, p.karatID))}</div><div>${esc(LK.name(LK.colours, p.colourID))}</div>
+        <div>Size: <select class="size">${UI.options(LK.ringSizes, LK.ringSizeByValue(l.size) ? LK.ringSizeByValue(l.size).id : -1)}</select></div>
+        <div><input type="number" class="short qty" min="1" value="${l.qty}"></div>
+        <div><a class="action blueLink note">add note</a></div>
+        <div class="right"><input type="number" step="any" class="short damt" value="${l.discountAmt}" title="discount amount"></div>
+        <div class="right">${money(l.unitPrice)}</div>
+        <div class="right"><input type="number" step="any" class="short dpct" value="${l.discountPct}">%</div>
+        <div class="right"><input type="number" step="any" class="num cprice" value="${l.customPrice}" title="quoted unit price (customUserPrice)" style="font-weight:bold"></div>
+        <div class="right nowrap">Retail: ${money(Number(l.customPrice) * M)}</div>
+        <div><a class="action blueLink cost">Cost</a></div></div>
+        <div class="details">Finishing: ${esc(LK.name(LK.finishings, l.finishingID))} &nbsp; Thickness: ${esc(l.thickness)} &nbsp; Completed: <span class="badge ${l.completed ? 'yes' : 'no'} cmp" style="cursor:pointer">${l.completed ? 'YES' : 'NO'}</span>
+          ${l.instruction ? ` &nbsp; Client Instructions: ${esc(l.instruction.length > 60 ? l.instruction.slice(0, 60) + '<...+' : l.instruction)}` : ''}<div class="noteBox hidden" style="margin-top:6px"><textarea rows="3" placeholder="Client instructions" style="width:400px">${esc(l.instruction)}</textarea><div><button type="button" class="saveNote">Save</button> <button type="button" class="cancelNote">Cancel</button></div></div></div>`;
+      d.querySelector('.rm').onclick = () => { if (confirm('Remove this line?')) { quote.lines.splice(i, 1); render(); } };
+      d.querySelector('.dup').onclick = () => { quote.lines.splice(i + 1, 0, Object.assign(DB.clone(l), { lineID: DB.nextCustomID() })); render(); };
+      d.querySelector('.size').onchange = e => { l.size = Number(e.target.value); };
+      d.querySelector('.qty').onchange = e => { l.qty = Math.max(1, Number(e.target.value) || 1); render(); };
+      d.querySelector('.cprice').onchange = e => { l.customPrice = Number(e.target.value) || 0; render(); };
+      d.querySelector('.dpct').onchange = e => { l.discountPct = Number(e.target.value) || 0; render(); };
+      d.querySelector('.damt').onchange = e => { l.discountAmt = Number(e.target.value) || 0; render(); };
+      d.querySelector('.note').onclick = () => d.querySelector('.noteBox').classList.toggle('hidden');
+      d.querySelector('.saveNote').onclick = () => { l.instruction = d.querySelector('.noteBox textarea').value; render(); };
+      d.querySelector('.cancelNote').onclick = () => d.querySelector('.noteBox').classList.add('hidden');
+      d.querySelector('.cmp').onclick = () => { l.completed = l.completed ? 0 : 1; render(); };
+      d.querySelector('.cost').onclick = () => UI.overlay('Cost (updateCost_form)', `<p>B2B unit price $${Number(l.unitPrice).toFixed(2)} · quoted $${Number(l.customPrice).toFixed(2)} · retail × ${M} = $${(Number(l.customPrice) * M).toFixed(2)}</p><p class="muted small">The live form lets the quoter edit the cost behind the price; the machine-made costing sheet was not captured.</p>`);
+      c.appendChild(d);
+    });
+    const sub = quote.lines.reduce((a, l) => a + lineTotal(l), 0);
+    $('#subtotal').textContent = money(sub); $('#total').textContent = money(sub); $('#retail').textContent = money(quote.lines.reduce((a, l) => a + Number(l.customPrice) * M * (Number(l.qty) || 0), 0));
+    $('#pieces').textContent = quote.lines.reduce((a, l) => a + (Number(l.qty) || 0), 0);
+  }
+  $('#showImg').onchange = render;
+  $('#lnkRemoveAll').onclick = () => { if (confirm('Are you sure you want to remove All items?')) { quote.lines = []; render(); } };
+  $('#lnkBulkQty').onclick = () => { const v = prompt('Quantity for every line:', '1'); if (v == null) return; quote.lines.forEach(l => { l.qty = Math.max(1, Number(v) || 1); }); render(); };
+  $('#btnSave').onclick = () => { DB.saveRegularQuote(quote); UI.updBan('saved'); };
+  $('#btnReset').onclick = () => { if (confirm('Reset this quote (ResetQuote)? Lines and contact fields go back to the saved state.')) location.reload(); };
+  function previewHTML() { return `<div class="email-preview"><p><b>Quote # ${quote.quoteID}</b> · ${esc(acc ? acc.name : '')} · ${quote.dateQuoted} · valid until ${quote.expiry}</p><table><tr><th>Item</th><th>Metal</th><th>Size</th><th>Qty</th><th>Price</th></tr>${quote.lines.map(l => { const p = PRODUCTS.byPID(l.PID); return `<tr><td>${esc(p.sku)}-C<br><span class="small">${esc(p.brand)}</span></td><td>${esc(LK.name(LK.karats, p.karatID))} ${esc(LK.name(LK.colours, p.colourID))}</td><td>${l.size > 0 ? l.size : 'Pending'}</td><td>${l.qty}</td><td style="text-align:right">${money(lineTotal(l))}</td></tr>`; }).join('')}<tr><td colspan="4" style="text-align:right"><b>Total (USD)</b></td><td style="text-align:right"><b>${$('#total').textContent}</b></td></tr></table></div>`; }
+  $('#btnPreview').onclick = () => UI.overlay('Quote preview', previewHTML(), null, { width: '760px' });
+  $('#btnSend').onclick = () => { if (!quote.lines.length) return alert('Add at least one item'); const to = [quote.sendToEmail && quote.contactEmail, quote.sendToEmail2 && quote.contactEmail2, quote.sendToFax && ('fax ' + quote.contactFax)].filter(Boolean); if (!to.length) return alert('Tick at least one email or fax to send to'); quote.pdfDate = DB.today(); DB.saveRegularQuote(quote); UI.overlay('Sent', `<p class="ok"><b>Quote sent</b> to ${esc(to.join(', '))} (simulated).</p>${previewHTML()}`, [{ label: 'OK', primary: true, onclick: () => location.reload() }], { width: '760px' }); };
+  render();
+  if (qs('preview') === '1') $('#btnPreview').click();
+})();
+</script>
 </body>
 </html>

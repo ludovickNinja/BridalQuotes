@@ -6,7 +6,7 @@
  */
 window.DB = (function () {
   const KEY = 'bq_db_v1';
-  const USER = 'Claude';
+  const USER = 'Claude A.'; // the quoter, as the live admin shows it ("Quote# 101575-Claude A.")
   const today = () => new Date().toISOString().slice(0, 10);
   const addDays = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
   const guid = () => 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'.replace(/x/g, () => (Math.random() * 16 | 0).toString(16));
@@ -14,13 +14,13 @@ window.DB = (function () {
 
   // ---------- blank records ----------
   function blankCDI() {
-    return { stoneProvider: 1, stoneCatID: 1, stoneTypeID: 1, stoneKindID: 0, shapeID: 16, notes: '', L: '', W: '', D: '', isPending: 1,
-      sizeID: 0, qty: 1, psID: 10, ps_custom: '', colourID: 36, DW: 0, pricePerCarat: 0, addlNotes: '', certID: 0, stoneCost: '', markup: null };
+    return { stoneProvider: 'Customer', stoneCatID: 1, stoneTypeID: 1, stoneKindID: 0, shapeID: 16, notes: '', L: '', W: '', D: '', isPending: 1,
+      sizeID: '', qty: 1, psID: 10, ps_custom: '', colourID: 36, DW: 0, pricePerCarat: 0, addlNotes: '', certID: 0, stoneCost: '', markup: null };
   }
-  function blankSCSI() { return { sendStone4Setting: -1, contactName: '', settingChargeID: 0, settingCost: 0, notes: '', isPending: 0, markup: null }; }
-  function blankADS() { return { sendStone4Setting: -1, contactName: '', qty: 1, settingChargeID: 0, settingCost: 0, isPending: 0, markup: null }; }
+  function blankSCSI() { return { sendStone4Setting: -1, contactName: '', settingChargeID: '', settingCost: 0, notes: '', isPending: 0, markup: null }; }
+  function blankADS() { return { sendStone4Setting: -1, contactName: '', qty: 1, settingChargeID: '', settingCost: 0, isPending: 0, markup: null }; }
   function blankAddl(adID) {
-    return { adID, stoneProvider: 2, stoneCatID: 1, stoneTypeID: 1, stoneKindID: 0, shapeID: 1, sizeID: 0, qty: 1, psID: 10, colourID: 36,
+    return { adID, stoneProvider: 'Crownring', stoneCatID: 1, stoneTypeID: 1, stoneKindID: 0, shapeID: 1, sizeID: '', qty: 1, psID: 10, colourID: 36,
       L: '', W: '', D: '', DW: 0, pricePerCarat: 0, certID: 0, stoneCost: '', settingStyleID: 0, settingLocationID: 0, notes: '', isPending: 0, markup: null };
   }
   function sideFromCosting(c, ids) {
@@ -51,8 +51,8 @@ window.DB = (function () {
       side: (p.side || []).map(c => sideFromCosting(c, ids)), SD_markup: null,
       addl: [], ads: blankADS(),
       design: { needsApproval: 0, approved4Prod: 0, approved4ProdText: '', priority: 2, date: today(), time: '08:00AM', requestTypes: [] },
-      otherFee: { cadPrintFeeID: 0, qty: 1, cost: 0, isPending: 0, markup: null },
-      renderings: [], pdfHistory: [], matchBand: { is: 0, type: 1, val: '' }, log: [],
+      otherFee: { cadPrintFeeID: '', qty: 1, cost: 0, isPending: 0, markup: null },
+      renderings: [], pdfHistory: [], matchBand: { is: 0, type: 'Serial#', val: '' }, log: [],
       dateCreated: today(), dateUpdated: today(), completedSkipped: []
     };
   }
@@ -71,22 +71,22 @@ window.DB = (function () {
       const p = PRODUCTS.bySKU(sku);
       const r = newRingFromProduct(p, quoteID, R);
       r.CBRID = CBRID; r.quoteID = quoteID;
-      r.gold.rate = p.karatID === 7 ? 49.8346 : p.karatID === 2 ? 78.0433 : r.gold.rate; // live rates on 2026-11-04 (displayed 49.84 / 78.04)
+      r.gold.rate = p.karatID === 17 ? 49.8346 : p.karatID === 2 ? 78.0433 : r.gold.rate; // live rates on 2026-11-04 (displayed 49.84 / 78.04; hidden goldCostPerGram 78.0429467195)
       mod(r);
       const t = PRICING.totals(r, R);
       r.priceUSD = t.sellUSD; r.priceCAD = t.sellCAD; r.finalCost = t.totalFinalCost;
       db.rings.push(r);
       return r;
     }
-    const centerOval = r => { Object.assign(r.cdi, { stoneProvider: 1, stoneCatID: 1, stoneTypeID: 1, shapeID: 16, L: 9.55, W: 6.62, D: 4.40, DW: 1.59, isPending: 0 }); };
+    const centerOval = r => { Object.assign(r.cdi, { stoneProvider: 'Customer', stoneCatID: 1, stoneTypeID: 1, shapeID: 16, L: 9.55, W: 6.62, D: 4.40, DW: 1.59, isPending: 0 }); };
     const settingYes = r => { Object.assign(r.scsi, { sendStone4Setting: 1, settingChargeID: 13, settingCost: 40 }); };
-    const cad03 = r => { Object.assign(r.otherFee, { cadPrintFeeID: 3, cost: 40 }); };
+    const cad03 = r => { Object.assign(r.otherFee, { cadPrintFeeID: 5, cost: 40 }); }; // live id 5 = "03. Frankenstein / Simple ER" $40
     const headBlock = (r, notes) => { r.custom.push({ ID: 73969 + r.custom.length, modelTypeID: 3, style: '', PID: 0, isPIDImgMain: 0, isPIDImgAlt: 0, img: '', modifIDs: [], karatID: 0, colourID: 0, notes }); };
     const bridge = r => { r.side[0].qty = 14; r.side[0].settings[0].qty = 14; r.side[0].settings[0].settingLocationID = 11; };
     const rendering = (r, fileName, src, flags) => r.renderings.push(Object.assign({ rID: db.seq.rendering++, sorting: r.renderings.length + 1, fileName, imgName: fileName, dateUpl: '2026-11-04', uploadedBy: USER, isChecked: 0, isShowInJobbag: 0, isTitleImg: 0, src }, flags || {}));
 
     // ---- Quote 101575 — Crown Samples, store request on B552-02 (4 rings) ----
-    mkQuote({ quoteID: 101575, uaID: 2875, shippingID: 4554, ctName: 'Claude', ctEmails: ['ludovick@crownring.com'], dateQuoted: '2026-11-04',
+    mkQuote({ quoteID: 101575, uaID: 2875, shippingID: 4554, ctName: 'Ludovick', ctEmails: ['ludovick@crownring.com'], dateQuoted: '2026-11-04',
       comments: 'Two variations as requested: hidden halo in the head, or diamonds on the bridge. All lab diamonds. Setting fee included.',
       internalComments: '<p>Store sent SKU B552-02YM-FCYA but wants white gold and platinum, all lab → entered on B552-02A-Lab.</p>' });
     mkRing('B552-02WM-Lab-FCYA', 101575, 57056, r => { r.ringSize = 4.5; centerOval(r); settingYes(r); cad03(r); headBlock(r, '* Change to Petal Basket Head\n* Keep Hidden Halo'); r.gold.weight = 3.5; r.lockPriceUSD = 885; r.status = 1; });
@@ -98,13 +98,13 @@ window.DB = (function () {
     mkQuote({ quoteID: 101587, uaID: 2954, shippingID: 0, ctName: 'Ilan', ctEmails: ['ilan@crownring.com'], dateQuoted: '2026-11-04' });
     mkRing('CUSTOM-FASHION-14K', 101587, 57091, r => {
       r.ringName = 'CUN00269 - Star of David L/Y necklace'; r.ringSize = 18; r.colourID = 1; r.isUpd = 1;
-      r.cdi.stoneProvider = 0; r.cdi.isPending = 0;
+      r.cdi.stoneProvider = ''; r.cdi.isPending = 0;
       r.custom.push({ ID: 73975, modelTypeID: 10, style: '', PID: 0, isPIDImgMain: 0, isPIDImgAlt: 0, img: '', modifIDs: [], karatID: 0, colourID: 0,
         notes: 'New style # CUN00269 - (Cable30 chain with lobster lock )\nGold @ 4131- $ 492\nMETAL KT - 14KT WHITE\nMETAL WT: 2.14gm ( Without chain )\nDIAMOND – LAB VS\nDIAMOND WT. 0.462 CTW' });
       r.gold.weight = 2.14;
       Object.assign(r.labor, { CADFee: 40, extra1: 107.22 });
       const ids = { sd: 1, sds: 1 };
-      r.side = [[3.4, 2], [1.1, 6], [1.0, 6], [0.9, 24]].map(([mm, qty]) => sideFromCosting({ provider: 2, stoneCatID: 1, stoneTypeID: 1, stoneKindID: 0, psID: 10, colourID: 36, shapeID: 1, sizeMM: mm, qty, settings: [{ qty, settingStyleID: 0, settingLocationID: 0, settingCost: 1 }] }, ids));
+      r.side = [[3.4, 2], [1.1, 6], [1.0, 6], [0.9, 24]].map(([mm, qty]) => sideFromCosting({ provider: 'Crownring', stoneCatID: 1, stoneTypeID: 1, stoneKindID: 0, psID: 10, colourID: 36, shapeID: 1, sizeMM: mm, qty, settings: [{ qty, settingStyleID: 0, settingLocationID: 0, settingCost: 1 }] }, ids));
       r.lockPriceUSD = 895; r.status = 1;
       rendering(r, 'spec_sheet_CUN00269.jpg', 'assets/img/spec_sheet_CUN00269.jpg', { isChecked: 1, isShowInJobbag: 1, isTitleImg: 1 });
     });
@@ -116,15 +116,19 @@ window.DB = (function () {
     mkQuote({ quoteID: 101460, uaID: 4546, shippingID: 6101, ctName: 'Sam', ctEmails: ['usa@crownring.com'], dateQuoted: ago(5), lastSent: ago(4), status: 'approved' });
     mkRing('B512-01WS-FCYA', 101460, 56990, r => { r.ringSize = 7; centerOval(r); settingYes(r); r.lockPriceUSD = 1120; r.status = 1; r.isApproved = 1; });
     mkQuote({ quoteID: 101301, uaID: 3102, shippingID: 7201, ctName: 'Priya', ctEmails: ['priya@demojewelers.example'], dateQuoted: ago(46), lastSent: ago(45), status: 'converted' });
-    mkRing('B027-01YM-FCYA', 101301, 56870, r => { r.ringSize = 5.5; r.cdi.stoneProvider = 0; r.cdi.isPending = 0; r.lockPriceUSD = 640; r.lockPriceCAD = 910; r.status = 1; });
+    mkRing('B027-01YM-FCYA', 101301, 56870, r => { r.ringSize = 5.5; r.cdi.stoneProvider = ''; r.cdi.isPending = 0; r.lockPriceUSD = 640; r.lockPriceCAD = 910; r.status = 1; });
     mkQuote({ quoteID: 101120, uaID: 3101, shippingID: 7101, ctName: 'Marie-Ève', ctEmails: ['marie-eve@bijouteriedemo.example'], dateQuoted: ago(66) });
     mkRing('B224-02WM-FCYA', 101120, 56874, r => { r.ringSize = 6.5; r.cdi.isPending = 1; r.scsi.sendStone4Setting = -1; r.lockPriceUSD = 1450; r.status = 1; r.completedSkipped = ['Center Stone Dimensions: PENDING', 'Sending Center Stone For Setting: PENDING']; });
 
-    // regular quotes tab (not walked through — list rows only)
+    // regular quotes tab (quoteEdit.asp, captured read-only on quote 101610 on 2026-11-05): lines priced from the B2B catalogue
+    const line = (sku, size, qty, customPrice, extra) => { const p = PRODUCTS.bySKU(sku); return Object.assign({ lineID: db.seq.custom++, PID: p.PID, size, qty, unitPrice: p.b2bPrice, customPrice: customPrice == null ? Math.ceil(p.b2bPrice) : customPrice, discountPct: 0, discountAmt: 0, finishingID: 28, thickness: p.thickness, completed: 1, instruction: '' }, extra || {}); };
     db.regularQuotes = [
-      { quoteID: 101461, uaID: 3102, endCustomer: 'J. Smith', userID: 'Vicky', dateQuoted: ago(3), status: 'pending' },
-      { quoteID: 101402, uaID: 3101, endCustomer: 'Famille Tremblay', userID: 'Dodgie', dateQuoted: ago(10), status: 'approved' },
-      { quoteID: 101377, uaID: 3103, endCustomer: 'M. Chen', userID: 'Vicky', dateQuoted: ago(40), status: 'converted' }
+      { quoteID: 101461, uaID: 3102, ctName: 'Priya', endCustomer: 'J. Smith', userID: 'Vicky W.', dateQuoted: ago(3), status: 'pending', shippingID: 7201, contactEmail: 'priya@demojewelers.example', contactEmail2: '', contactFax: '', sendToEmail: 1, sendToEmail2: 0, sendToFax: 0, pdfDate: null,
+        lines: [line('WB-046D4W-M10', 6.5, 1, 1945, { instruction: '14K WHITE\nNO DIAMONDS ON THE PROFILE EDGES' })] },
+      { quoteID: 101402, uaID: 3101, ctName: 'Marie-Ève', endCustomer: 'Famille Tremblay', userID: 'Dodgie L.', dateQuoted: ago(10), status: 'approved', shippingID: 7101, contactEmail: 'marie-eve@bijouteriedemo.example', contactEmail2: '', contactFax: '', sendToEmail: 1, sendToEmail2: 0, sendToFax: 0, pdfDate: ago(9),
+        lines: [line('CR-6MM-COMFORT-14K', 10, 1, 1250), line('CR-4MM-COMFORT-14K', 6, 1, 890)] },
+      { quoteID: 101377, uaID: 3103, ctName: 'David', endCustomer: 'M. Chen', userID: 'Vicky W.', dateQuoted: ago(40), status: 'converted', shippingID: 7301, contactEmail: 'david@samplefinejewelry.example', contactEmail2: '', contactFax: '', sendToEmail: 1, sendToEmail2: 0, sendToFax: 0, pdfDate: ago(39),
+        lines: [line('CR-5MM-DOME-Pt950', 9, 2, 1865)] }
     ].map(q => Object.assign(q, { expiry: addDays(q.dateQuoted, R.expiryDays) }));
     return db;
   }
@@ -150,6 +154,15 @@ window.DB = (function () {
 
     quotes() { return load().quotes; },
     regularQuotes() { return load().regularQuotes; },
+    regularQuote(id) { return load().regularQuotes.find(q => q.quoteID === Number(id)); },
+    saveRegularQuote(q) { const list = load().regularQuotes; const i = list.findIndex(x => x.quoteID === q.quoteID); if (i >= 0) list[i] = q; else list.push(q); save(); },
+    createRegularQuote(uaID, shippingID, ctName) {
+      const d = load(); const acc = ACCOUNTS.byID(uaID); const dq = today();
+      const q = { quoteID: d.seq.quote++, uaID, ctName: ctName || (acc ? acc.contact : ''), endCustomer: '', userID: USER, dateQuoted: dq, expiry: addDays(dq, d.rates.expiryDays), status: 'pending', shippingID: shippingID || 0, contactEmail: acc && acc.emails[0] || '', contactEmail2: '', contactFax: acc ? acc.phone : '', sendToEmail: 1, sendToEmail2: 0, sendToFax: 0, pdfDate: null, lines: [] };
+      d.regularQuotes.push(q); save(); return q;
+    },
+    deleteRegularQuote(id) { const d = load(); d.regularQuotes = d.regularQuotes.filter(q => q.quoteID !== Number(id)); save(); },
+    REGULAR_RETAIL_MULT: 2.2, // observed: $1,945 quoted → Retail $4,279
     quote(id) { return load().quotes.find(q => q.quoteID === Number(id)); },
     rings(quoteID) { return load().rings.filter(r => r.quoteID === Number(quoteID)).sort((a, b) => a.CBRID - b.CBRID); },
     ring(CBRID) { return load().rings.find(r => r.CBRID === Number(CBRID)); },
@@ -217,10 +230,10 @@ window.DB = (function () {
       if (Number(r.ringSize) === -1) items.push('Ring Size: PENDING');
       if (Number(r.finishingID) === 0) items.push('Finishing: None');
       const skipStone = /B$/.test(skuCode.replace(/-FCYA$/, '').replace(/-Lab$/, '')) || /^ST/.test(skuCode);
-      if (Number(r.cdi.stoneProvider) !== 0 && !skipStone) {
+      if (r.cdi.stoneProvider !== '' && !skipStone) {
         if (r.cdi.isPending || !r.cdi.L || !r.cdi.W || !r.cdi.D) items.push('Center Stone Dimensions: PENDING');
         if (Number(r.scsi.sendStone4Setting) === -1) items.push('Sending Center Stone For Setting: PENDING');
-        if (Number(r.scsi.sendStone4Setting) === 1 && (r.scsi.isPending || Number(r.scsi.settingChargeID) === 0)) items.push('Setting Center Diamond Stone: PENDING');
+        if (Number(r.scsi.sendStone4Setting) === 1 && (r.scsi.isPending || r.scsi.settingChargeID === '' || r.scsi.settingChargeID == null)) items.push('Setting Center Diamond Stone: PENDING');
       }
       if (Number(r.request.isPhoto) === 1 && !r.request.validated) items.push('Fancy Photos: NOT VALIDATED');
       if (r.addl.length && Number(r.ads.sendStone4Setting) === -1) items.push('Additional Diamond Setting: PENDING');

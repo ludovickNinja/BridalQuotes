@@ -179,7 +179,7 @@ Build a behaviour-compatible replacement, not a port. The quoters' mental model 
 
 **Still to capture before building.**
 
-- [ ] Regular Quotes flow (quoteEdit.asp) for machine-made bands: fields, pricing, send
+- [x] Regular Quotes flow (quoteEdit.asp) for machine-made bands: fields, pricing, send — captured read-only on 2026-11-05, see capture-2026-11-05.md (the cost form behind "Cost" is still unseen)
 - [ ] A quote with a CrownRing-supplied center stone (stone provider Crownring: the extra fields, cert, price per carat)
 - [ ] A quote with Additional Diamonds and the setting block
 - [ ] The CAD team's side: design approval, renderings, weight update and lock
@@ -188,6 +188,6 @@ Build a behaviour-compatible replacement, not a port. The quoters' mental model 
 - [ ] Unlock and relock after expiry; the 15-day extension
 - [ ] Karat code N in the SKU list; CAD lock rule for Canadian accounts
 - [ ] Where the live metal rate, exchange rate, duties and markups are configured
-- [ ] Export of the lookup tables and the product costing sheets
+- [x] Export of the lookup tables (all ring-editor dropdowns dumped from the DOM on 2026-11-05 → assets/js/data/live-lookups.json) · [ ] the product costing sheets and the stone weight per size
 
 Working material from the walkthrough (page captures, the ring editor's JavaScript, the sample request and spec sheet) is in this repo under docs/ and reference/.

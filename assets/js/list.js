@@ -3,7 +3,10 @@
   const { $, $$, esc, money, el, qs, accountName, statusClass } = UI;
   UI.adminBar('Quotes');
   const viewCBR = qs('viewCBR') == null ? 0 : Number(qs('viewCBR'));
-  $('#tab' + (viewCBR ? 'CBR' : 'Reg')).classList.add('on');
+  $('#tabCBR').className = viewCBR ? 'tab1' : 'tab2'; $('#tabReg').className = viewCBR ? 'tab2' : 'tab1';
+  $('#divExport').classList.toggle('hidden', !viewCBR);
+  const RM = '<img src="https://www.crownring.com/_admin/images/icon.remove.gif" alt="x" width="14" height="14" onerror="this.replaceWith(\'x\')">';
+  const BANG = '<svg width="14" height="14" viewBox="0 0 14 14" style="vertical-align:middle"><circle cx="7" cy="7" r="6.5" fill="#d00"/><rect x="6" y="3" width="2" height="5.5" fill="#fff"/><circle cx="7" cy="10.5" r="1.1" fill="#fff"/></svg>';
   const PAGE = 40;
   let page = 1, orderBy = { col: 'quoteID', dir: -1 };
   let companyFilterID = null;
@@ -24,7 +27,8 @@
       if (F.from && q.dateQuoted < F.from) return false;
       if (F.to && q.dateQuoted > F.to) return false;
       if (!F.viewConverted && q.status === 'converted') return false;
-      if (!F.viewExpired && DB.isExpired(q) && q.status !== 'converted') return false;
+      const expired = DB.isExpired(q) && q.status !== 'converted';
+      if (F.viewExpired ? !expired : expired) return false;
       return true;
     });
   }
@@ -36,7 +40,8 @@
       if (F.from && q.dateQuoted < F.from) return false;
       if (F.to && q.dateQuoted > F.to) return false;
       if (!F.viewConverted && q.status === 'converted') return false;
-      if (!F.viewExpired && DB.isExpired(q) && q.status !== 'converted') return false;
+      const expired = DB.isExpired(q) && q.status !== 'converted';
+      if (F.viewExpired ? !expired : expired) return false;
       return true;
     });
   }
@@ -53,36 +58,36 @@
     $('#pgSel').innerHTML = Array.from({ length: pages }, (_, i) => `<option value="${i + 1}"${i + 1 === page ? ' selected' : ''}>${i + 1}</option>`).join('');
     $('#pgInfo').textContent = `${all.length} quote${all.length === 1 ? '' : 's'} · page ${page} of ${pages}`;
     const rows = all.slice((page - 1) * PAGE, page * PAGE);
-    const th = (label, col) => `<th class="sort" data-col="${col}">${label}${orderBy.col === col ? (orderBy.dir > 0 ? ' ▲' : ' ▼') : ''}</th>`;
+    const th = (label, col, cls) => `<th class="sort ${cls || ''}" data-col="${col}">${label}${orderBy.col === col ? (orderBy.dir > 0 ? ' ▲' : ' ▼') : ''}</th>`;
     let html;
     if (viewCBR) {
-      html = `<table class="grid"><thead><tr><th><input type="checkbox" id="chkAll"></th>${th('Quote#', 'quoteID')}${th('Company name', 'company')}<th>User ID</th>${th('Start Date', 'dateQuoted')}${th('Last Sent', 'lastSent')}${th('Expiry date', 'expiry')}<th>Completed</th><th>Edit</th><th></th></tr></thead><tbody>`;
+      html = `<table class="grid"><thead><tr><th><input type="checkbox" id="chkAll"></th>${th('Quote#', 'quoteID')}${th('Company name', 'company', 'left')}<th>User ID</th>${th('Start Date', 'dateQuoted')}${th('Last Sent', 'lastSent')}${th('Expiry date', 'expiry')}<th>Completed</th><th>Edit</th><th>Preview</th><th></th></tr></thead><tbody>`;
       rows.forEach(q => {
         const c = DB.quoteCompleted(q.quoteID);
-        const bang = c.yes && c.missing.length ? `<span class="tooltip bang">!<span class="tip">${c.missing.map(m => `Ref# ${m.CBRID}<br>${m.items.map(esc).join('<br>')}`).join('<hr>')}</span></span>` : '';
+        const bang = c.yes && c.missing.length ? ` <span class="tooltip">${BANG}<span class="tip">${c.missing.map(m => `Ref# ${m.CBRID}<br>${m.items.map(esc).join('<br>')}`).join('<hr>')}</span></span>` : '';
         const exp = DB.isExpired(q) && q.status !== 'converted';
         html += `<tr class="${statusClass(q)}${exp ? ' expired' : ''}" data-id="${q.quoteID}">
           <td><input type="checkbox" class="sel" value="${q.quoteID}"></td>
           <td><a href="quote.html?quoteID=${q.quoteID}">${q.quoteID}</a>${q.isReplacement ? ' <span class="badge">Replacement</span>' : ''}${q.isRepair ? ' <span class="badge">Repair</span>' : ''}</td>
-          <td>${esc(accountName(q.uaID))} <span class="muted">(${esc(q.ctName)})</span></td>
+          <td class="left">${esc(accountName(q.uaID))} - ${esc(q.ctName)}</td>
           <td>${esc(q.userID)}</td><td>${q.dateQuoted}</td><td>${q.lastSent || ''}</td>
-          <td>${q.expiry}${exp ? ' <span class="danger small">expired</span> <a class="action small" data-act="extend">+15 days</a>' : ''}</td>
-          <td>${c.yes ? '<span class="badge yes">YES</span>' : '<span class="badge no">NO</span>'}${bang}</td>
-          <td><a href="quote.html?quoteID=${q.quoteID}">Edit</a> · <a class="action" data-act="previewCBR">Preview</a></td>
-          <td><a class="action danger" data-act="delete" title="Delete">✕</a></td></tr>`;
+          <td>${q.expiry}${exp ? ' <a class="action blueLink" data-act="extend" title="extend the quote by 15 days">+15</a>' : ''}</td>
+          <td>${c.yes ? 'YES' : 'NO'}${bang}</td>
+          <td><a href="quote.html?quoteID=${q.quoteID}">Edit</a></td><td><a class="action" data-act="previewCBR">Preview</a></td>
+          <td><a class="action" data-act="delete" title="Delete">${RM}</a></td></tr>`;
       });
     } else {
-      html = `<table class="grid"><thead><tr><th><input type="checkbox" id="chkAll"></th>${th('Quote#', 'quoteID')}${th('Company name', 'company')}<th>User ID</th>${th('Date quoted', 'dateQuoted')}${th('Expiry date', 'expiry')}<th>Edit</th><th>Preview</th><th></th></tr></thead><tbody>`;
+      html = `<table class="grid"><thead><tr><th><input type="checkbox" id="chkAll"></th>${th('Quote#', 'quoteID')}${th('Company name', 'company', 'left')}<th>User ID</th>${th('Date quoted', 'dateQuoted')}${th('Expiry date', 'expiry')}<th>Edit</th><th>Preview</th><th></th></tr></thead><tbody>`;
       rows.forEach(q => {
         const exp = DB.isExpired(q) && q.status !== 'converted';
         html += `<tr class="${statusClass(q)}${exp ? ' expired' : ''}" data-id="${q.quoteID}"><td><input type="checkbox" class="sel" value="${q.quoteID}"></td>
-          <td>${q.quoteID}</td><td>${esc(accountName(q.uaID))} <span class="muted">(${esc(q.endCustomer)})</span></td><td>${esc(q.userID)}</td><td>${q.dateQuoted}</td>
-          <td>${q.expiry}${exp ? ' <span class="danger small">expired</span>' : ''}</td>
-          <td><a href="quoteEdit.html?quoteID=${q.quoteID}">Edit</a></td><td><a class="action" data-act="previewReg">Preview</a></td><td><a class="action danger" data-act="deleteReg">✕</a></td></tr>`;
+          <td><a href="quoteEdit.html?quoteID=${q.quoteID}">${q.quoteID}</a></td><td class="left">${esc(accountName(q.uaID))} - ${esc(q.ctName || q.endCustomer || '')}</td><td>${esc(q.userID)}</td><td>${q.dateQuoted}</td>
+          <td>${q.expiry}</td>
+          <td><a href="quoteEdit.html?quoteID=${q.quoteID}">Edit</a></td><td><a class="action" data-act="previewReg">Preview</a></td><td><a class="action" data-act="deleteReg">${RM}</a></td></tr>`;
       });
     }
     html += '</tbody></table>';
-    if (!rows.length) html += '<p class="muted">No quotes match the current filters.</p>';
+    if (!rows.length) html += '<p style="padding:10px">No quote found.</p>';
     $('#divList').innerHTML = html;
     $$('#divList th.sort').forEach(h => h.onclick = () => sortBy(h.dataset.col));
     const all_ = $('#chkAll'); if (all_) all_.onchange = () => $$('.sel').forEach(c => { c.checked = all_.checked; });
@@ -91,10 +96,10 @@
 
   function action(act, id) {
     if (act === 'delete') { if (confirm('Are you sure you want to delete quote ' + id + '?')) { DB.deleteQuote(id); render(); } }
-    else if (act === 'deleteReg') { alert('Regular quotes are read-only in this POC (flow not captured yet).'); }
+    else if (act === 'deleteReg') { if (confirm('Are you sure you want to delete quote ' + id + '?')) { DB.deleteRegularQuote(id); render(); } }
     else if (act === 'extend') { DB.extendQuote(id); render(); }
     else if (act === 'previewCBR') { const rings = DB.rings(id); if (!rings.length) return alert('This quote has no ring yet.'); window.open('summary.html?CBRUID=' + rings[0].CBRUID, '_blank'); }
-    else if (act === 'previewReg') { UI.overlay('Quote preview (regular)', '<p class="muted">The regular quote preview (quote_act.asp act=previewQuote) was not captured in the walkthrough. See docs/Quote-System-Map.md → "Still to capture".</p>'); }
+    else if (act === 'previewReg') { window.open('quoteEdit.html?quoteID=' + id + '&preview=1', '_blank'); }
   }
 
   // Billing overlay → creates the draft quote (bridalQuote_add)
@@ -115,7 +120,7 @@
     ], { width: '640px' });
     const createBtn = box.querySelector('.ov-f button.primary'); createBtn.style.display = 'none';
     const emails = [];
-    const renderEmails = () => { box.querySelector('#divNotifEmailList').innerHTML = emails.map((e, i) => `<span class="badge">${esc(e)} <a class="action" data-i="${i}">✕</a></span> `).join(''); box.querySelector('[name=ctEmails]').value = emails.join(';'); box.querySelectorAll('#divNotifEmailList a').forEach(a => a.onclick = () => { emails.splice(Number(a.dataset.i), 1); renderEmails(); }); };
+    const renderEmails = () => { box.querySelector('#divNotifEmailList').innerHTML = emails.map((e, i) => `<span class="badge plain">${esc(e)} <a class="action" data-i="${i}">✕</a></span> `).join(''); box.querySelector('[name=ctEmails]').value = emails.join(';'); box.querySelectorAll('#divNotifEmailList a').forEach(a => a.onclick = () => { emails.splice(Number(a.dataset.i), 1); renderEmails(); }); };
     UI.smartSearch(box.querySelector('#SM_val'), q => ACCOUNTS.search(q), a => a.name, a => {
       box.querySelector('#SM_val').value = a.name; box.querySelector('[name=uaID]').value = a.uaID;
       box.querySelector('[name=shippingID]').innerHTML = '<option value="0"></option>' + a.shipping.map(s => `<option value="${s.shippingID}">${esc(s.address)}</option>`).join('');

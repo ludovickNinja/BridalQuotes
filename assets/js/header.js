@@ -14,11 +14,11 @@
   UI.adminBar('Custom Bridal Quote');
 
   // ---- header ----
-  $('#title').textContent = quote.quoteID ? `Custom Bridal Quote# ${quote.quoteID}-${quote.ctName}` : 'Custom Bridal Quote';
-  $('#dates').textContent = quote.quoteID ? `Quoted ${quote.dateQuoted} · Expiry ${quote.expiry}${quote.lastSent ? ' · Last sent ' + quote.lastSent : ''}` : 'New quote — not saved until the first ring is saved';
+  $('#title').textContent = quote.quoteID ? `Custom Bridal Quote# ${quote.quoteID}-${quote.userID || DB.USER}` : 'Custom Bridal Quote'; // live: quote number + the quoter's name
+  $('#dates').innerHTML = quote.quoteID ? `Created by: ${esc(quote.userID || DB.USER)} - ${quote.dateQuoted}<br>Expiry: ${quote.expiry}${quote.lastSent ? '<br>Last Sent: ' + quote.lastSent : ''}` : 'New quote — saved with the first ring';
   const ship = acc && acc.shipping.find(s => s.shippingID === Number(quote.shippingID));
-  $('#divBilling').innerHTML = `${esc(quote.ctName)}<br><a href="#" id="lnkAcc">${esc(acc ? acc.name : '')}</a><br>${esc(acc ? acc.billing : '')}<br>${esc(acc ? acc.phone : '')}<br><span class="small muted">currency ${cur}</span>`;
-  $('#divShipping').innerHTML = `${esc(quote.ctName)}<br>${esc(acc ? acc.name : '')}<br>${ship ? esc(ship.address) : '<span class="muted">(no shipping address selected)</span>'}`;
+  $('#divBilling').innerHTML = `${esc(acc ? acc.contact : '')}<br><a href="#" id="lnkAcc"><b>${esc(acc ? acc.name : '')}</b></a><br>${esc(acc ? acc.billing : '')}<br>${esc(acc ? acc.phone : '')}`;
+  $('#divShipping').innerHTML = `<b>${esc(acc ? acc.name : '')}</b><br>${ship ? esc(ship.address) : '<span class="muted">(no shipping address selected)</span>'}<br>${esc(acc ? acc.phone : '')}`;
   $('#lnkAcc').onclick = e => { e.preventDefault(); UI.overlay('Account ' + (acc ? acc.uaID : ''), `<p>userAccountEdit.asp?recID=${acc ? acc.uaID : ''} is outside the quote module; in the POC the account record is read-only.</p><pre>${esc(JSON.stringify(acc, null, 1))}</pre>`); };
   $('#btnLogAs').onclick = () => UI.overlay('Log As', `<p>In the live system this impersonates the retailer on the B2B site (home_act.asp act=log2B2B → /b2b/index.asp) to see the quote as the store does.</p><p>The POC equivalent is the customer summary page: ${DB.rings(quote.quoteID).map(r => `<a href="summary.html?CBRUID=${r.CBRUID}" target="_blank">Ref# ${r.CBRID}</a>`).join(' · ') || '(no ring yet)'}</p>`);
 
@@ -37,7 +37,7 @@
   f.internalComments.value = quote.internalComments || ''; $('#divInternalComments').innerHTML = quote.internalComments || '<span class="muted">(none)</span>';
   let emails = (quote.ctEmails || []).slice();
   function confirmEmails_loadDD() {
-    $('#divNotifEmailList').innerHTML = emails.map((e, i) => `<span class="badge">${esc(e)} <a class="action" data-i="${i}">✕</a></span> `).join('');
+    $('#divNotifEmailList').innerHTML = emails.map((e, i) => `<div>${esc(e)} <a class="action blueLink" data-i="${i}" title="remove">x</a></div>`).join('');
     f.ctEmails.value = emails.join(';');
     $$('#divNotifEmailList a').forEach(a => a.onclick = () => { emails.splice(Number(a.dataset.i), 1); confirmEmails_loadDD(); quoteCBRUpd(1); });
     $('#emailPick').innerHTML = '<option value=""></option>' + (acc ? acc.emails : []).map(e => `<option value="${esc(e)}">${esc(e)}</option>`).join('');
@@ -68,40 +68,43 @@
   // ---- ring rows ----
   function CBR_edit(CBRID) { readForm(); if (isDraft) DB.setDraft(quote); window.open(`ring.html?quoteID=${quote.quoteID}&CBRID=${CBRID || 0}`, '_blank'); }
   $('#btnAddRing').onclick = () => CBR_edit(0);
+  const NOTE = '<img src="https://www.crownring.com/_admin/images/note.svg" alt="" onerror="this.remove()">';
   function renderRows() {
     const rings = DB.rings(quote.quoteID);
     $('#divContentGnrl').classList.toggle('hidden', !rings.length);
+    $('#divTotalRow').classList.toggle('hidden', !rings.length);
     $('#tblCt').classList.toggle('hidden', !rings.length && isDraft);
     const rows = $('#divRows'); rows.innerHTML = '';
     rings.forEach(r => {
       const p = PRODUCTS.byPID(r.PID);
       const locked = DB.currency(quote.quoteID) === 'CAD' ? (r.lockPriceCAD > 0 ? r.lockPriceCAD : (r.lockPriceUSD > 0 ? r.lockPriceUSD : 0)) : r.lockPriceUSD;
       const row = el('div', { class: 'tr' + (r.isEnabled === 0 ? ' inactive' : r.isEnabled === -1 ? ' pendingrow' : ''), 'data-cbrid': r.CBRID, 'data-islockedprice': r.lockPriceUSD > 0 ? r.lockPriceUSD : 0 });
-      const prev = t => t ? ` <span class="small muted">— ${esc(t.length > 40 ? t.slice(0, 40) + '…' : t)}</span>` : '';
+      const has = t => t ? NOTE : '';
+      const pend = DB.pendingItems(r);
       row.innerHTML = `
         <div><select name="isEnabled"><option value="1"${r.isEnabled === 1 ? ' selected' : ''}>Active</option><option value="0"${r.isEnabled === 0 ? ' selected' : ''}>Inactive</option><option value="-1"${r.isEnabled === -1 ? ' selected' : ''}>Pending</option></select></div>
-        <div><img class="thumb" src="${p ? PRODUCTS.img(p, 'side') : ''}" alt=""></div>
-        <div class="desc">${r.ringName ? '<b>' + esc(r.ringName) + '</b><br>' : ''}<span class="small muted">${esc(p ? p.brand : '')}</span><br><span class="sku">${esc(p ? p.sku : '?')}-C</span> &nbsp; <span class="small">Ref#: ${r.CBRID}</span>
-          ${r.isApproved === 1 ? ' <span class="badge yes">ACCEPTED</span>' : r.isApproved === 0 ? ' <span class="badge no">DECLINED</span>' : ''}
-          <div class="links"><a class="action" data-act="dup">Duplicate</a><a href="summary.html?CBRUID=${r.CBRUID}" target="_blank">Preview</a><a class="action" data-act="note">Ring Notes</a>${prev(r.note)}<a class="action" data-act="ntrnl">Production Notes</a>${prev((r.ntrnlNotes || []).filter(Boolean).join(' / '))}<a class="action" data-act="admin">Admin Notes</a>${prev(r.adminNote)}<a class="action" data-act="links">Viewer Links</a>${prev([r.link1, r.link2].filter(Boolean).join(' '))}<a class="action" data-act="accept">Accept / Decline</a></div></div>
+        <div style="width:120px"><img src="${p ? PRODUCTS.img(p, 'side') : ''}" data-fallback="${p ? PRODUCTS.placeholder(p, 'side') : ''}" onerror="if(this.src!==this.dataset.fallback)this.src=this.dataset.fallback;else this.style.display='none'" alt="" style="max-width:110px;max-height:80px"></div>
+        <div class="desc"><span class="brand">${esc(p ? p.brand : '')}</span><br><span class="sku" data-act="edit" title="Edit this ring">${esc(p ? p.sku : '?')}-C</span> &nbsp; Ref#: ${r.CBRID}${r.ringName ? ' &nbsp; <i>' + esc(r.ringName) + '</i>' : ''}
+          ${r.isApproved === 1 ? '<br><span class="isApproved">ACCEPTED</span>' : r.isApproved === 0 ? '<br><span class="isDeclined">DECLINED</span>' : ''}
+          <div class="links"><div data-act="edit">Edit</div><div data-act="dup">Duplicate</div><div data-act="preview">Preview</div><div data-act="note">Ring Notes ${has(r.note)}</div><div data-act="ntrnl">Production Notes ${has((r.ntrnlNotes || []).some(Boolean))}</div><div data-act="admin">Admin Notes ${has(r.adminNote)}</div><div data-act="links">Viewer Links ${has(r.link1 || r.link2)}</div><div data-act="accept">Accept / Decline</div></div>
+          <div style="margin-top:6px">Completed: ${r.status ? '<span class="badge yes">YES</span>' : '<span class="badge no">NO</span>'}${pend.length && r.status ? ' <span class="tooltip"><span class="bang">!</span><span class="tip">' + pend.map(esc).join('<br>') + '</span></span>' : ''}</div></div>
         <div>${esc(LK.name(LK.karats, r.karatID))}<br>${esc(LK.name(LK.colours, r.colourID))}</div>
         <div>Size: ${r.ringSize === -1 ? '<span class="danger">Pending</span>' : r.ringSize === 0 ? 'N/A' : esc(r.ringSize)}</div>
-        <div><input type="number" name="qty" min="1" value="${r.qty}" class="short"></div>
-        <div>${r.status ? '<span class="badge yes">Completed YES</span>' : '<span class="badge no">Completed NO</span>'}${DB.pendingItems(r).length && r.status ? '<span class="tooltip bang">!<span class="tip">' + DB.pendingItems(r).map(esc).join('<br>') + '</span></span>' : ''}</div>
-        <div><a class="action" data-act="edit">Edit</a></div>
-        <div class="price">${money(DB.ringPrice(r), cur)}${locked ? '' : '<br><span class="small danger">not locked</span>'}</div>
-        <div class="rm" title="Remove" data-act="del">✕</div>`;
+        <div>Qty: <input type="number" name="qty" min="1" value="${r.qty}" class="short"></div>
+        <div class="price right">${money(DB.ringPrice(r))}${locked ? '' : '<br><span class="small danger">not locked</span>'}</div>
+        <div class="rm" title="Remove" data-act="del"><img src="https://www.crownring.com/_admin/images/icon.remove.gif" alt="x" onerror="this.replaceWith('x')"></div>`;
       row.querySelector('[name=isEnabled]').onchange = e => { r.isEnabled = Number(e.target.value); DB.saveRing(r); renderRows(); };
       row.querySelector('[name=qty]').onchange = e => { r.qty = Math.max(1, Number(e.target.value) || 1); DB.saveRing(r); renderRows(); };
       row.querySelectorAll('[data-act]').forEach(a => a.onclick = () => rowAction(a.dataset.act, r));
       rows.appendChild(row);
     });
-    $('#divTotal').textContent = money(DB.quoteTotal(quote.quoteID), cur);
+    $('#divTotal').textContent = money(DB.quoteTotal(quote.quoteID));
     const pdfs = rings.flatMap(r => (r.pdfHistory || []).map(h => `${h.date} · Ref# ${r.CBRID} · ${h.fileName}${h.isRetail ? ' (retail)' : ''}`));
     $('#divPdfHist').innerHTML = pdfs.length ? '<b>PDF history</b><br>' + pdfs.map(esc).join('<br>') : '';
   }
   function rowAction(act, r) {
     if (act === 'edit') return CBR_edit(r.CBRID);
+    if (act === 'preview') return window.open('summary.html?CBRUID=' + r.CBRUID, '_blank');
     if (act === 'del') { if (confirm('Are you sure you want to delete this ring?')) { DB.deleteRing(r.CBRID); renderRows(); } return; }
     if (act === 'note') return textModal('Notes about this ring (customer-facing)', r.note, v => { r.note = v; DB.saveRing(r); renderRows(); });
     if (act === 'admin') return textModal('Admin Notes', r.adminNote, v => { r.adminNote = v; DB.saveRing(r); renderRows(); });

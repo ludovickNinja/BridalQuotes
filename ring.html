@@ -3,45 +3,46 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Custom Bridal — ring editor — BridalQuotes POC</title>
+<title>Crownring - Custom Bridal</title>
 <link rel="stylesheet" href="assets/css/app.css">
 </head>
 <body>
-<div class="page wide">
+<div class="page editor">
   <form id="f" onsubmit="return false">
     <input type="hidden" name="loadingStep" value="">
     <div class="editor-top">
       <div>
-        <div class="toolbar"><h1>Custom Bridal</h1><span id="divLoadState" class="loading"></span></div>
+        <span class="title">Custom Bridal</span><span id="divLoadState" class="loading"></span>
         <div id="divImg">
           <div id="divBlockImg1" class="style-block">
-            <div class="inline">
-              <label><b>Enter style#</b> <input type="text" id="style1" name="styleSearch" style="width:220px" placeholder="e.g. B552-02"></label>
-              <span id="divSKU" class="hidden"><select name="PID" style="min-width:260px"></select> <button type="button" id="btnValidSKU" class="primary small">OK</button></span>
-              <a class="action hidden" id="lnkChangeSKU">change</a>
+            <div class="divDD">
+              <input type="text" id="style1" name="styleSearch" class="hmSearchField" style="width:110px" placeholder="Enter style#">
+              <span id="divSKU" class="hidden"><br><select name="PID" style="min-width:160px"></select> <button type="button" id="btnValidSKU">OK</button></span>
+              <br><a class="action blueLink hidden" id="lnkChangeSKU" style="color:#5b73f5">change</a>
             </div>
             <div id="divStyleDetails" class="hidden">
-              <div class="metal-block" id="metalBlock" title="Click to edit Ring Details"></div>
-              <div class="inline" style="margin-left:14px">
-                <label>Size <select name="ringSize"></select></label>
-                <label>Finishing <select name="finishingID"></select></label>
+              <div class="prod-imgs">
+                <div class="metal-block" id="metalBlock" title="Click to edit Ring Details"></div>
+                <span id="divProdImgs" style="display:contents"></span>
               </div>
-              <div class="prod-imgs" id="divProdImgs"></div>
             </div>
           </div>
           <div id="divBlockImg_plus"></div>
         </div>
+        <div class="sizeRow hidden" id="divSizeRow">Size: <select name="ringSize"></select> Finishing: <select name="finishingID" style="max-width:360px"></select></div>
       </div>
-      <div class="panel right">
-        <a id="lnkViewAs" href="#" target="_blank">View As</a><br>
-        <b id="accName"></b><br>
-        Quote#: <span id="spQuoteID">0</span> &nbsp; Ref#: <span id="spCBRID">0</span><br>
-        <input type="text" name="ringName" maxlength="50" style="width:100%;margin-top:6px" placeholder="Enter a name for this custom Ring (Optional)">
+      <div class="rightCol">
+        <div class="viewAs"><a id="lnkViewAs" href="#" target="_blank" style="color:#6871f4">View As</a></div>
+        <div class="acc"><span id="accName"></span><br>Quote#: <span id="spQuoteID">0</span><br>Ref#: <span id="spCBRID">0</span></div>
+        <button type="button" id="btnQuotePreview" class="btPreview" style="width:100%">Quote Preview</button>
+        <button type="button" id="btnJobBag" class="btPreview jobbag" style="width:100%">Job Bag Preview</button>
+        <div class="ringName">Enter a name for this custom Ring (Optional)<br><input type="text" name="ringName" maxlength="50"></div>
       </div>
     </div>
     <div id="divGblContent"></div>
   </form>
 </div>
+<script src="assets/js/data/live-lookups.js"></script>
 <script src="assets/js/data/lookups.js"></script>
 <script src="assets/js/data/products.js"></script>
 <script src="assets/js/data/accounts.js"></script>

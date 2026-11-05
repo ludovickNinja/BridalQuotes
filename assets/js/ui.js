@@ -25,13 +25,20 @@ window.UI = (function () {
   function val(root, name) { const f = root.querySelector(`[name="${name}"]`); if (!f) return undefined; if (f.type === 'checkbox') return f.checked ? 1 : 0; return f.value; }
   function num(root, name) { const v = val(root, name); return v === '' || v == null ? 0 : Number(v); }
 
-  // admin bar shared by every screen
-  function adminBar(title) {
-    const bar = el('div', { class: 'admin-bar' });
-    bar.innerHTML = `<span class="brand">WEB ADMINISTRATION</span> <a href="index.html">HOME</a> <a href="index.html">MENU</a> <a href="settings.html">RATES &amp; SETTINGS</a> <a href="#" onclick="return false">LOGOUT</a>
-      <span class="poc" title="Static proof of concept — data lives in this browser only">POC</span>
-      <span class="right">${esc(title || '')} · ${esc(DB.USER)} · ${esc(new Date().toISOString().slice(0, 10))}</span>`;
-    document.body.prepend(bar);
+  // page chrome shared by every screen: the admin's #tblGlobalContent (logo strip, black nav bar, white content cell with the 3px bar),
+  // wrapped around the page's own .page element. Title is unused here (the admin sets it inside the page); kept for the callers.
+  function adminBar(title, opts) {
+    opts = opts || {};
+    const page = $('.page') || document.body.firstElementChild;
+    const d = new Date();
+    const today = `${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][d.getDay()]} ${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${d.getFullYear()}`;
+    const tbl = el('div', { id: 'tblGlobalContent' });
+    tbl.innerHTML = `<div class="topBkg"><div class="logoRow"><a href="index.html"><img src="https://www.crownring.com/_admin/images/logo.png" alt="CrownRing" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'CROWNRING',style:'color:#fff;font:20px Georgia,serif;letter-spacing:4px;line-height:59px'}))"></a></div><div class="webAdmin">WEB ADMINISTRATION</div></div>
+      <div class="navRow"><a href="index.html">HOME</a><a href="settings.html">MENU</a><a href="#" onclick="return false">LOGOUT</a><span class="user">(${esc(DB.USER)})</span><span class="today">Today is ${today}</span></div>
+      <div class="contentCell"><div class="leftBar"></div></div>`;
+    tbl.querySelector('.contentCell').appendChild(page);
+    if (!page.querySelector('.pocTag')) page.appendChild(el('span', { class: 'pocTag', title: 'Static proof of concept — data lives in this browser only' }, ['POC']));
+    document.body.prepend(tbl);
   }
 
   // ---- overlay / modal ----

@@ -3,12 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Rates &amp; settings — BridalQuotes POC</title>
+<title>Crownring - Rates &amp; settings</title>
 <link rel="stylesheet" href="assets/css/app.css">
 </head>
 <body>
 <div class="page">
-  <div class="toolbar"><h1>Rates &amp; settings</h1><a href="index.html?viewCBR=1">» back to quote list</a></div>
+  <a class="backLink" href="index.html?viewCBR=1">&raquo; back to quote list</a>
+  <span class="title">Rates &amp; settings</span>
   <p class="muted">In the live system these values come from the server on every page load (live metal rate, exchange rate, duties and default markups — "configured somewhere", see the system map). Here they are editable so the POC can show how an unlocked quote drifts with the metal price.</p>
   <form id="f" class="panel" onsubmit="return false">
     <h2>Metal rates (per gram)</h2>
@@ -38,6 +39,7 @@
     <div class="btn-row"><button type="button" id="btnExport">Export JSON</button><button type="button" id="btnImport">Import JSON</button><input type="file" id="fileImport" accept="application/json" style="display:none"><button type="button" class="danger" id="btnReset">Reset demo data</button></div>
   </div>
 </div>
+<script src="assets/js/data/live-lookups.js"></script>
 <script src="assets/js/data/lookups.js"></script>
 <script src="assets/js/data/products.js"></script>
 <script src="assets/js/data/accounts.js"></script>

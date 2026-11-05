@@ -3,51 +3,53 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Custom Bridal Quote — BridalQuotes POC</title>
+<title>Crownring - Custom Bridal Quote</title>
 <link rel="stylesheet" href="assets/css/app.css">
 </head>
 <body>
-<div class="page wide">
-  <div class="toolbar">
-    <h1 id="title">Custom Bridal Quote</h1>
-    <a href="index.html?viewCBR=1">» back to quote list</a>
-    <span style="margin-left:auto" class="small muted" id="dates"></span>
-  </div>
-  <div id="divBanner" class="banner hidden"></div>
+<div class="page">
+  <a class="backLink" href="index.html?viewCBR=1">&raquo; back to quote list</a>
+  <span class="title" id="title">Custom Bridal Quote</span>
+  <div id="divBanner" class="strip hidden"></div>
   <form id="f" onsubmit="return false">
     <input type="hidden" name="quoteID"><input type="hidden" name="CBRID"><input type="hidden" name="uaID"><input type="hidden" name="shippingID"><input type="hidden" name="createNewPDF" value="1">
-    <div class="panel" style="display:grid;grid-template-columns:1fr 1fr auto;gap:16px">
-      <div><b>Billing</b><div id="divBilling"></div></div>
-      <div><b>Shipping</b><div id="divShipping"></div></div>
-      <div><button type="button" id="btnLogAs" class="small">Log As</button></div>
-    </div>
-    <div class="toolbar"><button type="button" class="primary" id="btnAddRing">ADD A RING</button> <span class="small muted">opens the ring editor in a new tab; the header refreshes when the ring is saved</span></div>
-    <div id="divContentGnrl" class="panel hidden" style="padding:0">
-      <div class="tr hdr"><div>Status</div><div></div><div>Ring</div><div>Metal / Colour</div><div>Size</div><div>Qty</div><div></div><div></div><div class="right">Price</div><div></div></div>
+    <table class="billShip" style="margin-top:15px">
+      <tr>
+        <td style="width:33%"><b>Billing</b><div id="divBilling" style="margin-top:4px"></div></td>
+        <td style="width:33%"><b>Shipping</b><div id="divShipping" style="margin-top:4px"></div></td>
+        <td class="right"><a class="action blueLink" id="btnLogAs">Log As</a><div id="dates" style="margin-top:4px"></div></td>
+      </tr>
+    </table>
+    <div style="margin:20px 0 10px"><button type="button" class="quickAddBtn" id="btnAddRing">ADD A RING</button></div>
+    <div id="divContentGnrl" class="hidden">
       <div id="divRows"></div>
-      <div class="total-row">Total: <span id="divTotal">$0.00</span></div>
     </div>
-    <div id="tblCt" class="panel hidden" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-      <div>
-        <b>Email Comments</b><br><textarea name="comments" rows="4"></textarea>
-        <label><input type="checkbox" name="isCommIncludEmail" checked> Include in email</label>
-        <table class="form" style="margin-top:8px">
-          <tr><td class="lbl req">Name</td><td><input type="text" name="ctName" maxlength="50" style="width:260px"></td></tr>
-          <tr><td class="lbl">Email list</td><td><div id="divNotifEmail"><select id="emailPick" style="min-width:220px"></select> <button type="button" class="small" id="btnAddEmail">Add</button></div><div id="divNotifEmailList" class="small" style="margin-top:4px"></div><input type="hidden" name="ctEmails"></td></tr>
-        </table>
-        <div class="btn-row"><button type="button" class="primary" id="btnSend">SEND</button> <button type="button" id="btnCopy">COPY EMAIL</button> <span class="small muted">Please note that all selected rings will be sent to the client</span></div>
-        <div id="divSendProgress" class="hidden"><div class="progress"><div></div></div><div class="small muted" id="divSendMsg"></div></div>
-      </div>
-      <div>
-        <b>Admin Internal Comments</b> <button type="button" class="small" id="btnIntComm">Add/Edit</button>
-        <div id="divInternalComments" class="panel tight" style="min-height:60px;margin-top:6px;background:#fafafa"></div>
-        <input type="hidden" name="internalComments">
-        <div id="divPdfHist" class="small muted" style="margin-top:8px"></div>
-      </div>
-    </div>
-    <div id="divButtons" class="btn-row"><button type="button" id="btnSave">Save Quote</button> <button type="button" id="btnDismiss" class="hidden">Dismiss approval</button> <button type="button" class="danger" id="btnDeleteQuote">Delete quote</button></div>
+    <div class="total-row hidden" id="divTotalRow" style="font-size:13px"><b>Total: <span id="divTotal">$0.00</span></b></div>
+    <table id="tblCt" class="hidden">
+      <tr>
+        <td style="vertical-align:top;width:55%">
+          <b>Email Comments</b> <label><input type="checkbox" name="isCommIncludEmail" checked> Include in email</label><br>
+          <textarea name="comments" style="width:100%;height:70px;box-sizing:border-box;margin-top:4px"></textarea>
+          <table class="form" style="margin:4px 0 0 -10px">
+            <tr><td class="lbl req">Name</td><td><input type="text" name="ctName" maxlength="50" style="width:260px"></td></tr>
+            <tr><td class="lbl">Email list</td><td><div id="divNotifEmail"><select id="emailPick" style="min-width:220px"></select> <a class="action blueLink" id="btnAddEmail">Add</a></div><div id="divNotifEmailList" style="margin-top:4px"></div><input type="hidden" name="ctEmails"></td></tr>
+          </table>
+          <div style="margin-top:6px"><button type="button" class="btSave" id="btnSend" style="margin:0;padding:5px 30px">SEND</button> <button type="button" class="btPreview plain" id="btnCopy" style="margin:0">COPY EMAIL</button></div>
+          <div class="sendNote">Please note that all selected rings will be sent to the client</div>
+          <div id="divSendProgress" class="hidden"><div class="progress"><div></div></div><div class="small muted" id="divSendMsg"></div></div>
+        </td>
+        <td style="vertical-align:top">
+          <b>Admin Internal Comments</b> [<a class="action blueLink" id="btnIntComm">Add/Edit</a>]
+          <div id="divInternalComments" style="min-height:60px;margin-top:6px;padding:5px;border:1px solid #ccc;background:#fafafa"></div>
+          <input type="hidden" name="internalComments">
+          <div id="divPdfHist" class="small" style="margin-top:8px"></div>
+        </td>
+      </tr>
+    </table>
+    <div id="divButtons" style="margin:15px 0"><button type="button" id="btnSave">Save Quote</button> <button type="button" id="btnDismiss" class="hidden">Dismiss approval</button> <button type="button" class="danger" id="btnDeleteQuote">Delete quote</button></div>
   </form>
 </div>
+<script src="assets/js/data/live-lookups.js"></script>
 <script src="assets/js/data/lookups.js"></script>
 <script src="assets/js/data/products.js"></script>
 <script src="assets/js/data/accounts.js"></script>

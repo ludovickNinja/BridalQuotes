@@ -38,12 +38,12 @@ window.PRICING = (function () {
     return { qty, DW: Math.round(DW * 10000) / 10000, cost: r2(cost) };
   }
   function centerCost(cdi) {
-    if (!cdi || num(cdi.stoneProvider) !== 2) return 0; // only a Crownring-supplied stone carries a cost
+    if (!cdi || cdi.stoneProvider !== 'Crownring') return 0; // only a Crownring-supplied stone carries a cost
     if (cdi.stoneCost != null && cdi.stoneCost !== '') return r2(cdi.stoneCost);
     return r2(num(cdi.DW) * num(cdi.pricePerCarat) * (num(cdi.qty) || 1));
   }
   function addlCost(b) {
-    if (num(b.stoneProvider) === 1) return 0; // customer stone
+    if (b.stoneProvider === 'Customer' || b.stoneProvider === '') return 0; // customer stone
     if (b.stoneCost != null && b.stoneCost !== '') return r2(b.stoneCost);
     return r2(num(b.DW) * num(b.pricePerCarat));
   }
@@ -66,8 +66,8 @@ window.PRICING = (function () {
       const sell = cost * (1 + duties / 100) * markup * qty;
       rows.push(Object.assign({ key, label, cost: r2(cost), duties, markup: num(markup), qty, final: r2(final), sell: r2(sell), _final: final, _sell: sell }, extra || {}));
     };
-    push('center', 'Center Diamond', center, d.center, ring.cdi && ring.cdi.markup != null ? ring.cdi.markup : m.center, 1, { pending: !!(ring.cdi && ring.cdi.isPending && num(ring.cdi.stoneProvider) !== 0) });
-    push('setting', 'Setting Center Stone', scsi, d.setting, ring.scsi && ring.scsi.markup != null ? ring.scsi.markup : m.setting, 1, { pending: !!(ring.scsi && num(ring.scsi.sendStone4Setting) === -1 && ring.cdi && num(ring.cdi.stoneProvider) !== 0) });
+    push('center', 'Center Diamond', center, d.center, ring.cdi && ring.cdi.markup != null ? ring.cdi.markup : m.center, 1, { pending: !!(ring.cdi && ring.cdi.isPending && ring.cdi.stoneProvider !== '') });
+    push('setting', 'Setting Center Stone', scsi, d.setting, ring.scsi && ring.scsi.markup != null ? ring.scsi.markup : m.setting, 1, { pending: !!(ring.scsi && num(ring.scsi.sendStone4Setting) === -1 && ring.cdi && ring.cdi.stoneProvider !== '') });
     (ring.addl || []).forEach((b, i) => push('addl' + i, 'Additional Diamond ' + (i + 1), addlCost(b), d.addl, b.markup != null ? b.markup : m.addl, num(b.qty) || 1, { pending: !!b.isPending, adID: b.adID }));
     if (!ring.addl || !ring.addl.length) push('addl0', 'Additional Diamond 1', 0, d.addl, m.addl, 1);
     push('ads', 'Additional Diamond Setting', ads, d.ads, ring.ads && ring.ads.markup != null ? ring.ads.markup : m.ads, 1, { pending: !!(ring.ads && ring.ads.isPending) });

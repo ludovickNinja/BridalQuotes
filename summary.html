@@ -3,15 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Custom Bridal Quote — summary</title>
+<title>Crownring - Custom Bridal Quote</title>
 <link rel="stylesheet" href="assets/css/app.css">
-<style>body{background:#f4f1ec}</style>
+<style>body{background:#f4f4f4}</style>
 </head>
 <body>
 <div class="page">
   <div class="notice">Customer-facing summary (stand-in for /quote_custom_summary.asp?CBRUID=…). The live page was not captured in detail; this is what the store sees after SEND, assembled from the ring record. In the real system the store approves the quote on the B2B site, not here.</div>
   <div class="summary" id="divSummary"></div>
 </div>
+<script src="assets/js/data/live-lookups.js"></script>
 <script src="assets/js/data/lookups.js"></script>
 <script src="assets/js/data/products.js"></script>
 <script src="assets/js/data/accounts.js"></script>
@@ -30,11 +31,11 @@
   const shown = ring.renderings.filter(r => r.isChecked);
   const title = ring.renderings.find(r => r.isTitleImg);
   const sideDesc = ring.side.map(g => `${g.qty} × ${LK.name(LK.diamondSizes, g.sizeID)} mm ${LK.name(LK.qualities, g.psID)} ${LK.name(LK.shapes, g.shapeID)}${(g.settings[0] && g.settings[0].settingLocationID) ? ' (' + LK.name(LK.settingLocations, g.settings[0].settingLocationID) + ')' : ''}`).join(', ');
-  const center = Number(ring.cdi.stoneProvider) === 0 ? '' : `${Number(ring.cdi.stoneProvider) === 1 ? "Customer's" : 'CrownRing'} ${LK.name(LK.shapes, ring.cdi.shapeID)} ${ring.cdi.DW ? ring.cdi.DW + ' ct' : ''} ${ring.cdi.L ? `(${ring.cdi.L} × ${ring.cdi.W} × ${ring.cdi.D} mm)` : ''}${ring.cdi.isPending ? ' — details pending' : ''}`;
+  const center = !ring.cdi.stoneProvider ? '' : `${ring.cdi.stoneProvider === 'Customer' ? "Customer's" : 'CrownRing'} ${LK.name(LK.shapes, ring.cdi.shapeID)} ${ring.cdi.DW ? ring.cdi.DW + ' ct' : ''} ${ring.cdi.L ? `(${ring.cdi.L} × ${ring.cdi.W} × ${ring.cdi.D} mm)` : ''}${ring.cdi.isPending ? ' — details pending' : ''}`;
   box.innerHTML = `
-    <div class="brandline">NOAM CARVER</div><div class="sub">CrownRing Bridal House · Custom Bridal Quote # ${quote.quoteID} · Ref# ${ring.CBRID}</div>
+    <div class="brandline">CrownRing</div><div class="brandsub">Bridal House</div><div class="sub">Noam Carver · Custom Bridal Quote # ${quote.quoteID} · Ref# ${ring.CBRID}</div>
     <div class="hero">
-      <img src="${title ? title.src : (p ? PRODUCTS.img(p, 'persp') : '')}" alt="">
+      <img src="${title ? title.src : (p ? PRODUCTS.img(p, 'persp') : '')}" data-fallback="${p ? PRODUCTS.placeholder(p, 'persp') : ''}" onerror="if(this.dataset.fallback&&this.src!==this.dataset.fallback)this.src=this.dataset.fallback" alt="">
       <div>
         <h2 style="margin-top:0">${esc(ring.ringName || (p ? p.sku + '-C' : ''))}</h2>
         ${ring.ringName && p ? `<div class="muted">${esc(p.sku)}-C</div>` : ''}

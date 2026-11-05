@@ -3,43 +3,42 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Quotes — BridalQuotes POC</title>
+<title>Crownring - Quotes</title>
 <link rel="stylesheet" href="assets/css/app.css">
 </head>
 <body>
-<div class="page wide">
-  <div class="toolbar">
-    <h1>Quote Module</h1>
-    <div class="legend"><span class="converted">Converted to Order</span><span class="approved">Approved by client</span><span class="pending">Pending</span></div>
+<div class="page">
+  <span class="title">Quotes</span>
+  <div id="divLegend">
+    <div><div style="background:#ebeeff"></div> Converted to Order</div>
+    <div><div style="background:#f0d9d9"></div> Approved by client</div>
+    <div><div style="background:#f0f0f0"></div> Pending</div>
   </div>
-  <div class="panel tight">
-    <a href="quoteEdit.html?quoteID=0">To Add a New Quote, Click Here</a> &nbsp;·&nbsp;
-    <a href="#" id="lnkAddCBR">To Add a New Custom Bridal Quote, Click Here</a>
+  <div class="addLinks">
+    <div><img src="https://www.crownring.com/_admin/images/plus.gif" alt="+" width="11" height="11" onerror="this.replaceWith('+ ')"><a href="quoteEdit.html?quoteID=0">To Add a New Quote, Click Here</a></div>
+    <div><img src="https://www.crownring.com/_admin/images/plus.gif" alt="+" width="11" height="11" onerror="this.replaceWith('+ ')"><a href="#" id="lnkAddCBR">To Add a New Custom Bridal Quote, Click Here</a></div>
   </div>
-  <form id="f" class="panel" onsubmit="return false">
-    <div class="toolbar">
-      <label>Quote# <input type="text" name="SM_val" class="short" style="width:80px"></label>
-      <label>Ref# <input type="text" name="CBRID" class="short" style="width:80px"></label>
-      <label>Company name <input type="text" name="company" id="company" style="width:220px" placeholder="smart search (active clients)"></label>
-      <label>From <input type="date" name="dateQuotedFrom"></label>
-      <label>To <input type="date" name="dateQuotedTo"></label>
+  <form id="f" onsubmit="return false">
+    <div class="filterRow">
+      <label>Quote#<br><input type="text" name="SM_val" style="width:80px"></label>
+      <label>Ref#<br><input type="text" name="CBRID" style="width:80px"></label>
+      <label>Company name<br><input type="text" name="company" id="company" class="hmSearchField" style="width:220px"></label>
+      <label>From<br><input type="date" name="dateQuotedFrom"></label>
+      <label>To<br><input type="date" name="dateQuotedTo"></label>
       <label><input type="checkbox" name="viewConverted"> View Converted Quotes</label>
-      <label><input type="checkbox" name="viewExpired"> View Expired Quotes</label>
-      <button type="button" id="btnOk" class="primary">Ok</button>
-      <button type="button" id="btnReset">Reset</button>
+      <label><input type="checkbox" name="viewExpired"> View Expired Quotes Only</label>
+      <span><button type="button" id="btnOk">Ok</button> <button type="button" id="btnReset">Reset</button></span>
     </div>
   </form>
-  <div class="tabs">
+  <div id="divTabs">
     <a href="?viewCBR=0" id="tabReg">Quotes</a>
     <a href="?viewCBR=1" id="tabCBR">Custom Bridal Quotes</a>
   </div>
-  <div class="panel" style="border-top:none">
-    <div class="pager">Page <select id="pgSel"></select> <button type="button" class="small" id="pgNext">&gt;&gt;</button> <span id="pgInfo" class="muted"></span>
-      <span style="margin-left:auto"><button type="button" id="btnExport" class="small">Export Bridal Quotes</button></span></div>
-    <div id="divList"></div>
-  </div>
-  <p class="small muted">Rows: Pending = yellow, Approved by client = green, Converted to Order = blue. Expired quotes are hidden unless "View Expired" is ticked; converted quotes unless "View Converted" is ticked. 40 rows per page.</p>
+  <div class="pager">Page <select id="pgSel"></select> <a class="action" id="pgNext">&gt;&gt;</a> <span id="pgInfo" class="muted"></span></div>
+  <div class="exportLink" id="divExport"><a class="action" id="btnExport">Export Bridal Quotes</a></div>
+  <div id="divList"></div>
 </div>
+<script src="assets/js/data/live-lookups.js"></script>
 <script src="assets/js/data/lookups.js"></script>
 <script src="assets/js/data/products.js"></script>
 <script src="assets/js/data/accounts.js"></script>
